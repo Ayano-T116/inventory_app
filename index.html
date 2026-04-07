@@ -32,12 +32,36 @@
             <table class="grid" aria-describedby="gridHelp">
               <thead>
                 <tr>
-                  <th>symbol</th>
-                  <th>diameter</th>
-                  <th>thickness</th>
-                  <th>coating-type</th>
-                  <th class="num">quantity</th>
-                  <th>updated-at</th>
+                  <th data-key="symbol">
+                    <button type="button" class="thBtn">
+                      <span>記号</span><span class="sortMark" aria-hidden="true">-</span>
+                    </button>
+                  </th>
+                  <th data-key="diameter">
+                    <button type="button" class="thBtn">
+                      <span>口径</span><span class="sortMark" aria-hidden="true">-</span>
+                    </button>
+                  </th>
+                  <th data-key="thickness">
+                    <button type="button" class="thBtn">
+                      <span>厚み</span><span class="sortMark" aria-hidden="true">-</span>
+                    </button>
+                  </th>
+                  <th data-key="coating_type">
+                    <button type="button" class="thBtn">
+                      <span>表被仕様</span><span class="sortMark" aria-hidden="true">-</span>
+                    </button>
+                  </th>
+                  <th class="num" data-key="quantity">
+                    <button type="button" class="thBtn thBtnNum">
+                      <span>数量</span><span class="sortMark" aria-hidden="true">-</span>
+                    </button>
+                  </th>
+                  <th data-key="updated_at">
+                    <button type="button" class="thBtn">
+                      <span>更新日時</span><span class="sortMark" aria-hidden="true">-</span>
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody id="tbody"></tbody>
@@ -60,23 +84,23 @@
 
         <div class="formGrid">
           <label class="field">
-            <span class="label">symbol</span>
+            <span class="label">記号</span>
             <input name="symbol" type="text" required autocomplete="off" />
           </label>
           <label class="field">
-            <span class="label">diameter</span>
+            <span class="label">口径</span>
             <input name="diameter" type="number" step="0.001" min="0" required />
           </label>
           <label class="field">
-            <span class="label">thickness</span>
+            <span class="label">厚み</span>
             <input name="thickness" type="number" step="0.001" min="0" required />
           </label>
           <label class="field">
-            <span class="label">coating-type</span>
+            <span class="label">表被仕様</span>
             <input name="coating_type" type="text" autocomplete="off" />
           </label>
           <label class="field">
-            <span class="label">quantity</span>
+            <span class="label">数量</span>
             <input name="quantity" type="number" step="1" min="0" required />
           </label>
         </div>
@@ -88,7 +112,7 @@
           </button>
         </div>
         <p class="dialogNote">
-          ※ DB列名は <code>coating_type</code> / <code>updated_at</code> を想定しています。
+          ※ 更新日は自動で入力されます。
         </p>
       </form>
     </dialog>

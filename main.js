@@ -14,11 +14,14 @@ const COLUMNS = [
 
 const elTbody = document.getElementById("tbody");
 const elStatus = document.getElementById("status");
+const elHeaders = Array.from(document.querySelectorAll(".grid thead th[data-key]"));
 const btnRefresh = document.getElementById("btnRefresh");
 const btnAddRow = document.getElementById("btnAddRow");
 const dialogAdd = document.getElementById("dialogAdd");
 const formAdd = document.getElementById("formAdd");
 const btnSubmitAdd = document.getElementById("btnSubmitAdd");
+let allRows = [];
+let sortState = { key: null, direction: "none" };
 
 function setStatus(message, kind = "info") {
   if (!elStatus) return;
@@ -36,6 +39,52 @@ function formatValue(key, value) {
   }
 
   return String(value);
+}
+
+function compareValues(a, b, key) {
+  if (a === b) return 0;
+  if (a === null || a === undefined) return 1;
+  if (b === null || b === undefined) return -1;
+
+  if (key === "diameter" || key === "thickness" || key === "quantity") {
+    return Number(a) - Number(b);
+  }
+  if (key === "updated_at") {
+    return new Date(a).getTime() - new Date(b).getTime();
+  }
+  return String(a).localeCompare(String(b), "ja");
+}
+
+function getSortedRows(rows) {
+  if (!sortState.key || sortState.direction === "none") return [...rows];
+
+  const dir = sortState.direction === "asc" ? 1 : -1;
+  return [...rows].sort((left, right) => {
+    return compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
+  });
+}
+
+function updateHeaderSortMark() {
+  for (const th of elHeaders) {
+    const key = th.dataset.key;
+    const mark = th.querySelector(".sortMark");
+    th.classList.remove("sorted");
+    if (!mark) continue;
+
+    if (key !== sortState.key || sortState.direction === "none") {
+      mark.textContent = "-";
+      continue;
+    }
+
+    th.classList.add("sorted");
+    mark.textContent = sortState.direction === "asc" ? "▲" : "▼";
+  }
+}
+
+function rerenderWithSort() {
+  const sorted = getSortedRows(allRows);
+  renderRows(sorted);
+  updateHeaderSortMark();
 }
 
 function renderRows(rows) {
@@ -63,7 +112,25 @@ function renderRows(rows) {
       if (col.align === "num") td.classList.add("num");
 
       const v = formatValue(col.key, row[col.key]);
-      td.textContent = v;
+
+      if (col.key === "diameter" || col.key === "thickness") {
+        const wrap = document.createElement("div");
+        wrap.className = "unitCell";
+
+        const valueSpan = document.createElement("span");
+        valueSpan.textContent = v;
+
+        const unitSpan = document.createElement("span");
+        unitSpan.className = "unit";
+        unitSpan.textContent = col.key === "diameter" ? "A" : "t";
+
+        wrap.appendChild(valueSpan);
+        wrap.appendChild(unitSpan);
+        td.appendChild(wrap);
+      } else {
+        td.textContent = v;
+      }
+
       tr.appendChild(td);
     }
 
@@ -83,7 +150,8 @@ async function fetchMaterials() {
 
     if (error) throw error;
 
-    renderRows(data);
+    allRows = data;
+    rerenderWithSort();
     setStatus(`表示件数: ${data.length}`);
   } catch (e) {
     console.error(e);
@@ -133,6 +201,28 @@ async function insertMaterial(payload) {
 btnRefresh.addEventListener("click", () => {
   fetchMaterials();
 });
+
+for (const th of elHeaders) {
+  const btn = th.querySelector(".thBtn");
+  if (!btn) continue;
+
+  btn.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (!key) return;
+
+    if (sortState.key !== key) {
+      sortState = { key, direction: "asc" };
+    } else if (sortState.direction === "asc") {
+      sortState = { key, direction: "desc" };
+    } else if (sortState.direction === "desc") {
+      sortState = { key: null, direction: "none" };
+    } else {
+      sortState = { key, direction: "asc" };
+    }
+
+    rerenderWithSort();
+  });
+}
 
 btnAddRow.addEventListener("click", () => {
   openAddDialog();

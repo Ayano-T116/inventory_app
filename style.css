@@ -141,10 +141,11 @@ body {
 }
 
 table.grid {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: fixed;
+  table-layout: auto;
   font-size: 14px;
 }
 
@@ -159,6 +160,7 @@ table.grid {
   padding: 10px 10px;
   text-align: left;
   white-space: nowrap;
+  min-width: 120px;
 }
 
 .grid thead th.num {
@@ -169,8 +171,6 @@ table.grid {
   border-bottom: 1px solid var(--grid);
   border-right: 1px solid var(--grid);
   padding: 9px 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   background: #fff;
 }
@@ -187,6 +187,49 @@ table.grid {
 .grid td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.thBtn {
+  appearance: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  font-weight: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.thBtnNum {
+  justify-content: flex-end;
+}
+
+.sortMark {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.grid thead th.sorted .sortMark {
+  color: #111827;
+}
+
+.unitCell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.unit {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .cell {

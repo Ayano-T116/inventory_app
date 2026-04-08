@@ -2,24 +2,23 @@ import { supabase } from "./supabase.js";
 
 const TABLE = "materials";
 
-// UIの「coating-type」「updated-at」は、DB列名として coating_type / updated_at を想定
+// テーブル内に表示する列（symbol はタイトルに出すので列には含めない）
 const COLUMNS = [
-  { label: "symbol", key: "symbol" },
-  { label: "diameter", key: "diameter" },
-  { label: "thickness", key: "thickness" },
-  { label: "coating-type", key: "coating_type" },
-  { label: "quantity", key: "quantity", align: "num" },
-  { label: "updated-at", key: "updated_at" },
+  { label: "口径", key: "diameter" },
+  { label: "厚み", key: "thickness" },
+  { label: "表被仕様", key: "coating_type" },
+  { label: "数量", key: "quantity", align: "num" },
+  { label: "更新日時", key: "updated_at" },
 ];
 
-const elTbody = document.getElementById("tbody");
+const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
-const elHeaders = Array.from(document.querySelectorAll(".grid thead th[data-key]"));
 const btnRefresh = document.getElementById("btnRefresh");
 const btnAddRow = document.getElementById("btnAddRow");
 const dialogAdd = document.getElementById("dialogAdd");
 const formAdd = document.getElementById("formAdd");
 const btnSubmitAdd = document.getElementById("btnSubmitAdd");
+
 let allRows = [];
 let sortState = { key: null, direction: "none" };
 
@@ -29,13 +28,20 @@ function setStatus(message, kind = "info") {
   elStatus.dataset.kind = kind;
 }
 
+/** 更新日時を整形する */
 function formatValue(key, value) {
   if (value === null || value === undefined) return "";
 
   if (key === "updated_at") {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return String(value);
-    return d.toLocaleString();
+
+    const formattedDate =
+      `${d.getFullYear()}/` +
+      `${String(d.getMonth() + 1).padStart(2, '0')}/` +
+      `${String(d.getDate()).padStart(2, '0')}`;
+
+    return formattedDate;
   }
 
   return String(value);
@@ -64,8 +70,20 @@ function getSortedRows(rows) {
   });
 }
 
+/** symbol ごとに行をまとめる */
+function groupBySymbol(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const sym = row.symbol == null ? "" : String(row.symbol);
+    if (!map.has(sym)) map.set(sym, []);
+    map.get(sym).push(row);
+  }
+  return map;
+}
+
 function updateHeaderSortMark() {
-  for (const th of elHeaders) {
+  const headers = document.querySelectorAll(".grid thead th[data-key]");
+  for (const th of headers) {
     const key = th.dataset.key;
     const mark = th.querySelector(".sortMark");
     th.classList.remove("sorted");
@@ -81,61 +99,142 @@ function updateHeaderSortMark() {
   }
 }
 
-function rerenderWithSort() {
-  const sorted = getSortedRows(allRows);
-  renderRows(sorted);
-  updateHeaderSortMark();
+/** ヘッダ行を作成する */
+function createHeaderRow() {
+  const tr = document.createElement("tr");
+  for (const col of COLUMNS) {
+    const th = document.createElement("th");
+    th.dataset.key = col.key;
+    if (col.align === "num") th.classList.add("num");
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = col.align === "num" ? "thBtn thBtnNum" : "thBtn";
+
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = col.label;
+    const markSpan = document.createElement("span");
+    markSpan.className = "sortMark";
+    markSpan.setAttribute("aria-hidden", "true");
+    markSpan.textContent = "-";
+
+    btn.appendChild(labelSpan);
+    btn.appendChild(markSpan);
+    th.appendChild(btn);
+    tr.appendChild(th);
+  }
+  return tr;
 }
 
-function renderRows(rows) {
-  elTbody.innerHTML = "";
-
-  if (!rows || rows.length === 0) {
-    const tr = document.createElement("tr");
+/** セルを作成する */
+function appendCells(tr, row) {
+  for (const col of COLUMNS) {
     const td = document.createElement("td");
-    td.colSpan = COLUMNS.length;
-    td.className = "muted";
-    td.textContent = "データがありません。右上の「新規行を追加」から登録できます。";
+    td.classList.add("cell");
+    td.tabIndex = 0;
+    if (col.align === "num") td.classList.add("num");
+
+    const v = formatValue(col.key, row[col.key]);
+
+    if (col.key === "diameter" || col.key === "thickness") {
+      const wrap = document.createElement("div");
+      wrap.className = "unitCell";
+      const valueSpan = document.createElement("span");
+      valueSpan.textContent = v;
+      const unitSpan = document.createElement("span");
+      unitSpan.className = "unit";
+      unitSpan.textContent = col.key === "diameter" ? "A" : "t";
+      wrap.appendChild(valueSpan);
+      wrap.appendChild(unitSpan);
+      td.appendChild(wrap);
+    } else {
+      td.textContent = v;
+    }
+
+    if (col.key === "updated_at") {
+      td.textContent = v;
+    }
     tr.appendChild(td);
-    elTbody.appendChild(tr);
+  }
+}
+
+/** symbolごとにテーブルを作成する */
+function renderGroups() {
+  elGroupContainer.innerHTML = "";
+
+  if (!allRows.length) {
+    const p = document.createElement("p");
+    p.className = "muted emptyHint";
+    p.textContent = "データがありません。右上の「新規行を追加」から登録できます。";
+    elGroupContainer.appendChild(p);
     return;
   }
 
-  for (const row of rows) {
-    const tr = document.createElement("tr");
+  const bySymbol = groupBySymbol(allRows);
+  const symbols = [...bySymbol.keys()].sort((a, b) => a.localeCompare(b, "ja"));
 
-    for (const col of COLUMNS) {
-      const td = document.createElement("td");
-      td.classList.add("cell");
-      td.tabIndex = 0; // Excelっぽく「セルを選択」できるようにする
+  for (const sym of symbols) {
+    const rowsInGroup = getSortedRows(bySymbol.get(sym));
 
-      if (col.align === "num") td.classList.add("num");
+    const section = document.createElement("section");
+    section.className = "groupBlock";
 
-      const v = formatValue(col.key, row[col.key]);
+    const titleRow = document.createElement("div");
+    titleRow.className = "groupTitleRow";
 
-      if (col.key === "diameter" || col.key === "thickness") {
-        const wrap = document.createElement("div");
-        wrap.className = "unitCell";
+    const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "groupToggle";
+    toggleBtn.textContent = "ー";
+    toggleBtn.setAttribute("aria-expanded", "true");
+    toggleBtn.setAttribute("aria-label", "テーブルの表示を切り替え");
 
-        const valueSpan = document.createElement("span");
-        valueSpan.textContent = v;
+    const title = document.createElement("h2");
+    title.className = "groupTitle";
+    title.textContent = sym || "（記号なし）";
 
-        const unitSpan = document.createElement("span");
-        unitSpan.className = "unit";
-        unitSpan.textContent = col.key === "diameter" ? "A" : "t";
+    const count = document.createElement("span");
+    count.className = "groupCount";
+    count.textContent = `${rowsInGroup.length}件`;
 
-        wrap.appendChild(valueSpan);
-        wrap.appendChild(unitSpan);
-        td.appendChild(wrap);
-      } else {
-        td.textContent = v;
-      }
+    const innerWrap = document.createElement("div");
+    innerWrap.className = "tableWrap groupTableWrap";
 
-      tr.appendChild(td);
+    const table = document.createElement("table");
+    table.className = "grid";
+
+    toggleBtn.addEventListener("click", () => {
+      const collapsed = table.classList.toggle("isCollapsed");
+      toggleBtn.textContent = collapsed ? "＋" : "ー";
+      toggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+
+    const thead = document.createElement("thead");
+    thead.appendChild(createHeaderRow());
+
+    const tbody = document.createElement("tbody");
+    for (const row of rowsInGroup) {
+      const tr = document.createElement("tr");
+      appendCells(tr, row);
+      tbody.appendChild(tr);
     }
 
-    elTbody.appendChild(tr);
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    innerWrap.appendChild(table);
+    titleRow.appendChild(toggleBtn);
+    titleRow.appendChild(title);
+    titleRow.appendChild(count);
+    section.appendChild(titleRow);
+    section.appendChild(innerWrap);
+    elGroupContainer.appendChild(section);
   }
+
+  updateHeaderSortMark();
+}
+
+function rerenderWithSort() {
+  renderGroups();
 }
 
 async function fetchMaterials() {
@@ -150,13 +249,14 @@ async function fetchMaterials() {
 
     if (error) throw error;
 
-    allRows = data;
+    allRows = data || [];
     rerenderWithSort();
-    setStatus(`表示件数: ${data.length}`);
+    setStatus("");
   } catch (e) {
     console.error(e);
     setStatus(`エラー: ${e.message || e}`, "error");
-    renderRows([]);
+    allRows = [];
+    renderGroups();
   } finally {
     btnRefresh.disabled = false;
   }
@@ -202,27 +302,29 @@ btnRefresh.addEventListener("click", () => {
   fetchMaterials();
 });
 
-for (const th of elHeaders) {
-  const btn = th.querySelector(".thBtn");
-  if (!btn) continue;
+// 動的に増えるヘッダは親で委譲
+elGroupContainer.addEventListener("click", (e) => {
+  const btn = e.target.closest(".thBtn");
+  if (!btn || !elGroupContainer.contains(btn)) return;
 
-  btn.addEventListener("click", () => {
-    const key = th.dataset.key;
-    if (!key) return;
+  const th = btn.closest("th[data-key]");
+  if (!th) return;
 
-    if (sortState.key !== key) {
-      sortState = { key, direction: "asc" };
-    } else if (sortState.direction === "asc") {
-      sortState = { key, direction: "desc" };
-    } else if (sortState.direction === "desc") {
-      sortState = { key: null, direction: "none" };
-    } else {
-      sortState = { key, direction: "asc" };
-    }
+  const key = th.dataset.key;
+  if (!key) return;
 
-    rerenderWithSort();
-  });
-}
+  if (sortState.key !== key) {
+    sortState = { key, direction: "asc" };
+  } else if (sortState.direction === "asc") {
+    sortState = { key, direction: "desc" };
+  } else if (sortState.direction === "desc") {
+    sortState = { key: null, direction: "none" };
+  } else {
+    sortState = { key, direction: "asc" };
+  }
+
+  rerenderWithSort();
+});
 
 btnAddRow.addEventListener("click", () => {
   openAddDialog();
@@ -240,7 +342,6 @@ formAdd.addEventListener("submit", async (ev) => {
     quantity: readNumber(fd, "quantity"),
   };
 
-  // 超シンプルな入力チェック（初心者向けに最低限）
   if (!payload.symbol) {
     setStatus("symbol は必須です。", "error");
     return;
@@ -253,5 +354,5 @@ formAdd.addEventListener("submit", async (ev) => {
   await insertMaterial(payload);
 });
 
-// 初期表示
+/** 初期化 ここからスタート */
 fetchMaterials();

@@ -23,52 +23,16 @@
 
       <main class="main">
         <section class="sheet">
-          <div class="sheetHeader">
-            <div class="sheetName">materials</div>
-            <div class="sheetHint">セルをクリックして選択できます（編集は「新規行」から）。</div>
-          </div>
 
           <div class="tableWrap" role="region" aria-label="在庫一覧">
-            <table class="grid" aria-describedby="gridHelp">
-              <thead>
-                <tr>
-                  <th data-key="symbol">
-                    <button type="button" class="thBtn">
-                      <span>記号</span><span class="sortMark" aria-hidden="true">-</span>
-                    </button>
-                  </th>
-                  <th data-key="diameter">
-                    <button type="button" class="thBtn">
-                      <span>口径</span><span class="sortMark" aria-hidden="true">-</span>
-                    </button>
-                  </th>
-                  <th data-key="thickness">
-                    <button type="button" class="thBtn">
-                      <span>厚み</span><span class="sortMark" aria-hidden="true">-</span>
-                    </button>
-                  </th>
-                  <th data-key="coating_type">
-                    <button type="button" class="thBtn">
-                      <span>表被仕様</span><span class="sortMark" aria-hidden="true">-</span>
-                    </button>
-                  </th>
-                  <th class="num" data-key="quantity">
-                    <button type="button" class="thBtn thBtnNum">
-                      <span>数量</span><span class="sortMark" aria-hidden="true">-</span>
-                    </button>
-                  </th>
-                  <th data-key="updated_at">
-                    <button type="button" class="thBtn">
-                      <span>更新日時</span><span class="sortMark" aria-hidden="true">-</span>
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody id="tbody"></tbody>
-            </table>
+            <div id="groupContainer" class="groupContainer"></div>
           </div>
+          <!-- 
+            この要素はスクリーンリーダー（視覚障害者向け補助技術）でのみ読み上げられる案内文です。
+            視覚的には表示されませんが、アクセシビリティ向上のために存在しています。
+          -->
           <p id="gridHelp" class="srOnly">
-            在庫一覧テーブルです。上部のボタンから更新・新規登録ができます。
+            在庫一覧です。記号ごとにテーブルが並びます。数量のセルに直接入力し、更新ボタンを押してください。上部のボタンから新規行登録ができます。
           </p>
         </section>
       </main>

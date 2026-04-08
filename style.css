@@ -136,8 +136,81 @@ body {
 }
 
 .tableWrap {
+  height: 100%;
+}
+
+.groupContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 14px 16px;
+}
+
+.groupBlock {
+  border: 1px solid var(--grid);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+  flex: 1;
+  min-width: 0;
+}
+
+.groupTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #f3f4f6, #eef0f4);
+  border-bottom: 1px solid var(--grid);
+}
+
+.groupToggle {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1rem;
+  padding: 0;
+  border: 1px solid var(--gridDark);
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.groupToggle:hover {
+  background: #f9fafb;
+}
+
+.groupCount {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: #4b5563;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+table.grid.isCollapsed thead,
+table.grid.isCollapsed tbody {
+  display: none;
+}
+
+.groupTableWrap {
   overflow: auto;
-  max-height: calc(100vh - 220px);
+  max-height: none;
+}
+
+.emptyHint {
+  margin: 0;
+  padding: 20px 14px;
 }
 
 table.grid {
@@ -160,7 +233,7 @@ table.grid {
   padding: 10px 10px;
   text-align: left;
   white-space: nowrap;
-  min-width: 120px;
+  min-width: 60px;
 }
 
 .grid thead th.num {

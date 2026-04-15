@@ -381,10 +381,11 @@ async function fetchMaterials() {
     updateRefreshButtonState();
     rerenderWithSort();
     setStatus("");
+    console.log(env);
     if(env === "prod"){
-      subtitle.textContent = `Supabase / materials 大正断熱専用です。部外者は触るんじゃねぇ。`;
+      subtitle.textContent = `大正断熱専用です。部外者は触るんじゃねぇ。`;
     }else{
-      subtitle.textContent = `upabase / materials デモバージョンです。ご自由に操作ください。`;
+      subtitle.textContent = `デモバージョンです。ご自由に操作ください。`;
     }
   } catch (e) {
     console.error(e);

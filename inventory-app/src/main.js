@@ -2,6 +2,8 @@ import { supabase } from "./supabase.js";
 
 const TABLE = "materials";
 
+const env = import.meta.env.VITE_ENV || "";
+
 // テーブル内に表示する列（symbol はタイトルに出すので列には含めない）
 const COLUMNS = [
   { label: "口径", key: "diameter" },
@@ -36,6 +38,7 @@ const numericInputs = Array.from(
   formAdd.querySelectorAll("input[name='diameter'], input[name='thickness'], input[name='quantity']")
 );
 const selectSymbol = document.getElementById("selectSymbol");
+const subtitle = document.getElementById("subtitle");
 
 let allRows = [];
 let sortStateBySymbol = {};
@@ -378,6 +381,11 @@ async function fetchMaterials() {
     updateRefreshButtonState();
     rerenderWithSort();
     setStatus("");
+    if(env === "prod"){
+      subtitle.textContent = `Supabase / materials 大正断熱専用です。部外者は触るんじゃねぇ。`;
+    }else{
+      subtitle.textContent = `upabase / materials デモバージョンです。ご自由に操作ください。`;
+    }
   } catch (e) {
     console.error(e);
     setStatus(`エラー: ${e.message || e}`, "error");

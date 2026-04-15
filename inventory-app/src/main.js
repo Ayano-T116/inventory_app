@@ -381,7 +381,6 @@ async function fetchMaterials() {
     updateRefreshButtonState();
     rerenderWithSort();
     setStatus("");
-    console.log(env);
     if(env === "prod"){
       subtitle.textContent = `大正断熱専用です。部外者は触るんじゃねぇ。`;
     }else{

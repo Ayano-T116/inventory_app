@@ -118,6 +118,16 @@ button:disabled:active {
   border-color: rgba(180, 35, 24, 0.9);
 }
 
+.btnRefresh {
+  background: linear-gradient(180deg, #00c300, #00b900);
+  border-color: #00c300;
+}
+
+.btnRefresh:hover {
+  background: linear-gradient(180deg, #00b900, #009900);
+  border-color: #00b900;
+}
+
 .status {
   min-height: 18px;
   font-size: 13px;

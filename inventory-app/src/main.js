@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
-import  { TABLE, COLUMNS, selectSymbols, ENV, prodMessage, devMessage} from "./utils/constants.js";
+import { TABLE, COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/constants.js";
+import { getAllItems, addItem, deleteItem, updateItem } from "./db.js";
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -183,9 +184,9 @@ function createHeaderRow(sym) {
     btn.className = col.align === "num" ? "thBtn thBtnNum" : "thBtn";
 
     const labelSpan = document.createElement("span");
-    if (col.key === "diameter" ) {
+    if (col.key === "diameter") {
       labelSpan.textContent = selectSymbols.find((item) => item.value === sym)?.diameterLabel;
-    }else{
+    } else {
       labelSpan.textContent = col.label;
     }
     const markSpan = document.createElement("span");
@@ -235,7 +236,7 @@ function appendCells(tr, row) {
       unitSpan.className = "unit";
       if (col.key === "diameter") {
         unitSpan.textContent = selectSymbols.find((item) => item.value === row.symbol)?.diameterSuffix || "A";
-      }else{
+      } else {
         unitSpan.textContent = "t";
       }
       wrap.appendChild(valueSpan);
@@ -350,12 +351,11 @@ async function fetchMaterials() {
 
   try {
     //DBからデータ取得
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select("id,symbol,diameter,thickness,coating_type,quantity,updated_at")
-      .order("updated_at", { ascending: false });
-
-    if (error) throw error;
+    const { data, error } = await getAllItems();
+    if (error) {
+      alert("データを取得できませんでした。");
+      throw error;
+    }
 
     //画面表示
     allRows = data || [];
@@ -369,9 +369,9 @@ async function fetchMaterials() {
     updateRefreshButtonState();
     rerenderWithSort();
     setStatus("");
-    if(ENV === "prod"){
+    if (ENV === "prod") {
       subtitle.textContent = prodMessage;
-    }else{
+    } else {
       subtitle.textContent = devMessage;
     }
   } catch (e) {
@@ -404,12 +404,14 @@ function closeAddDialog() {
 function createSymbolOptions() {
   const select = document.querySelector("select[name='symbol']");
   if (!select) return;
-  selectSymbols.forEach(({ value, label }) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    select.appendChild(option);
-  });
+  if (select.options.length === 0) {
+    selectSymbols.forEach(({ value, label }) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      select.appendChild(option);
+    });
+  }
 }
 
 function createDiameterTexts(symbol) {
@@ -443,8 +445,11 @@ async function insertMaterial(payload) {
   if (btnDelete) btnDelete.disabled = true;
 
   try {
-    const { error } = await supabase.from(TABLE).insert(payload);
-    if (error) throw error;
+    const { error } = await addItem(payload);
+    if (error) {
+      alert("データを登録できませんでした。");
+      throw error;
+    }
 
     setStatus("登録しました。再読み込みします...");
     dialogAdd.close();
@@ -516,8 +521,11 @@ async function deleteMaterialsByIds(ids) {
   if (btnRefresh) btnRefresh.disabled = true;
 
   try {
-    const { error } = await supabase.from(TABLE).delete().in("id", ids);
-    if (error) throw error;
+    const { error } = await deleteItem(ids);
+    if (error) {
+      alert("データを削除できませんでした。");
+      throw error;
+    }
 
     checkedIds = [];
     closeDeleteDialog();
@@ -606,14 +614,12 @@ async function updateQuantities() {
     );
 
 
-    for(const pl of payload){
-      
-      const { error } = await supabase
-      .from(TABLE)
-      .update(pl)
-      .eq('id', pl.id);
-
-    if (error) throw error;
+    for (const pl of payload) {
+      const { error } = updateItem(pl);
+      if (error) {
+        alert("データを更新できませんでした。");
+        throw error;
+      }
     }
 
     quantityChanges = [];

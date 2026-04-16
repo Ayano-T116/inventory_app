@@ -2,6 +2,7 @@ import { COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/co
 import { getAllItems, deleteItem, updateItem } from "./db.js";
 import { initAddDialog } from "./dialogs/addDialog.js";
 import { initHelpers } from "./utils/helpers.js";
+import { initDeleteDialog } from "./dialogs/deleteDialog.js";
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -390,89 +391,6 @@ async function fetchMaterials() {
   }
 }
 
-/** 新規登録ダイアログ関連の処理 */
-
-const { openAddDialog } = initAddDialog({
-  dialogAdd,
-  formAdd,
-  btnAddOk,
-  btnAddCancel,
-  btnAddRow,
-  btnDelete,
-  setStatus,
-  fetchMaterials,
-  selectSymbol,
-  updateDeleteButtonState,
-  updateRefreshButtonState,
-});
-
-
-/** 削除ダイアログ関連の処理 */
-
-function openDeleteDialog() {
-  if (!dialogDelete || !deleteListBody) return;
-  if (!checkedIds.length) return;
-
-  const selected = allRows.filter((r) => checkedIds.includes(toId(r.id)));
-  deleteListBody.innerHTML = "";
-
-  if (deleteSummary) deleteSummary.textContent = `${selected.length}件を削除します。よろしいですか？`;
-
-  for (const row of selected) {
-    const tr = document.createElement("tr");
-    const tdMat = document.createElement("td");
-    tdMat.textContent = formatMaterialText(row);
-    const tdQty = document.createElement("td");
-    tdQty.className = "num";
-    const pending = getQuantityChange(row.id);
-    tdQty.textContent = pending
-      ? String(pending.quantity)
-      : row.quantity == null
-        ? ""
-        : String(row.quantity);
-    tr.appendChild(tdMat);
-    tr.appendChild(tdQty);
-    deleteListBody.appendChild(tr);
-  }
-
-  dialogDelete.showModal();
-}
-
-function closeDeleteDialog() {
-  if (!dialogDelete) return;
-  dialogDelete.close();
-}
-
-async function deleteMaterialsByIds(ids) {
-  if (!ids.length) return;
-  setStatus("削除中...");
-  if (btnDeleteOk) btnDeleteOk.disabled = true;
-  if (btnDeleteCancel) btnDeleteCancel.disabled = true;
-  if (btnDelete) btnDelete.disabled = true;
-  if (btnAddRow) btnAddRow.disabled = true;
-  if (btnRefresh) btnRefresh.disabled = true;
-
-  try {
-    const { error } = await deleteItem(ids);
-    if (error) {
-      alert("データを削除できませんでした。");
-      throw error;
-    }
-
-    checkedIds = [];
-    closeDeleteDialog();
-    await fetchMaterials();
-  } catch (e) {
-    console.error(e);
-    setStatus(`削除エラー: ${e.message || e}`, "error");
-  } finally {
-    if (btnDeleteOk) btnDeleteOk.disabled = false;
-    if (btnDeleteCancel) btnDeleteCancel.disabled = false;
-    updateDeleteButtonState();
-    if (btnAddRow) btnAddRow.disabled = false;
-    updateRefreshButtonState();
-  }
-}
 
 /** 数量変更ダイアログ関連の処理 */
 
@@ -720,7 +638,7 @@ btnRefresh.addEventListener("click", async () => {
   fetchMaterials();
 });
 
-/** カラム名が押下された場合の処理 */
+//カラム名が押下された場合の処理
 elGroupContainer.addEventListener("click", (e) => {
   const btn = e.target.closest(".thBtn");
   if (!btn || !elGroupContainer.contains(btn)) return;
@@ -781,38 +699,63 @@ elGroupContainer.addEventListener("click", (e) => {
   updateRefreshButtonState();
 });
 
+/** 新規登録ダイアログ関連の処理 */
+
 //新規登録ボタン押下処理
-btnAddRow.addEventListener("click", () => {
-  openAddDialog();
-});
+if (btnAddRow) {
+  btnAddRow.addEventListener("click", () => {
+    const { openAddDialog } = initAddDialog({
+      dialogAdd,
+      formAdd,
+      btnAddOk,
+      btnAddCancel,
+      btnAddRow,
+      btnDelete,
+      setStatus,
+      fetchMaterials,
+      selectSymbol,
+      updateDeleteButtonState,
+      updateRefreshButtonState,
+    });
+    openAddDialog();
+  });
+}
 
 // 登録ダイアログを閉じたときは入力内容をリセットする
 dialogAdd.addEventListener("close", () => {
   formAdd.reset();
 });
 
+/** 削除ダイアログ関連の処理 */
 
+//削除ボタン押下処理
 if (btnDelete) {
   btnDelete.addEventListener("click", () => {
     if (!checkedIds.length) return;
+    const { openDeleteDialog } = initDeleteDialog({
+      dialogDelete,
+      deleteListBody,
+      deleteSummary,
+      formDelete,
+      btnDeleteOk,
+      btnDeleteCancel,
+      btnAddRow,
+      btnDelete,
+      btnRefresh,
+      setStatus,
+      fetchMaterials,
+      updateDeleteButtonState,
+      updateRefreshButtonState,
+      toId,
+      getQuantityChange,
+      allRows,
+      checkedIds,
+    });
     openDeleteDialog();
   });
 }
 
-if (btnDeleteCancel) {
-  btnDeleteCancel.addEventListener("click", () => {
-    // キャンセル時はチェック状態を維持し、再描画もしない
-    closeDeleteDialog();
-  });
-}
-
-if (formDelete) {
-  formDelete.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    if (!checkedIds.length) return;
-    await deleteMaterialsByIds([...checkedIds]);
-  });
-}
+/** 数量変更ダイアログ関連の処理 */
 
 if (btnQuantityChangeCancel) {
   btnQuantityChangeCancel.addEventListener("click", () => {
@@ -828,10 +771,6 @@ if (formQuantityChange) {
     await updateQuantities();
   });
 }
-
-// selectSymbol.addEventListener("change", (ev) => {
-//   createDiameterTexts(ev.target.value);
-// });
 
 /** 初期化 ここからスタート */
 updateDeleteButtonState();

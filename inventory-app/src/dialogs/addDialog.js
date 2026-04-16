@@ -25,8 +25,6 @@ export function initAddDialog({
         formAdd.querySelectorAll("input[name='diameter'], input[name='thickness'], input[name='quantity']")
     );
 
-    
-
     // ダイアログを開く関数
     function openAddDialog() {
         if (!dialogAdd) return;

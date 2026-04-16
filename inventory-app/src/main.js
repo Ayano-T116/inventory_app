@@ -1,6 +1,7 @@
-import { supabase } from "./supabase.js";
-import { TABLE, COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/constants.js";
-import { getAllItems, addItem, deleteItem, updateItem } from "./db.js";
+import { COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/constants.js";
+import { getAllItems, deleteItem, updateItem } from "./db.js";
+import { initAddDialog } from "./dialogs/addDialog.js";
+import { initHelpers } from "./utils/helpers.js";
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -9,8 +10,8 @@ const btnDelete = document.getElementById("btnDelete");
 const btnAddRow = document.getElementById("btnAddRow");
 const dialogAdd = document.getElementById("dialogAdd");
 const formAdd = document.getElementById("formAdd");
-const btnSubmitAdd = document.getElementById("btnSubmitAdd");
-const btnDialogCancel = document.getElementById("btnDialogCancel");
+const btnAddOk = document.getElementById("btnAddOk");
+const btnAddCancel = document.getElementById("btnAddCancel");
 const dialogDelete = document.getElementById("dialogDelete");
 const formDelete = document.getElementById("formDelete");
 const deleteSummary = document.getElementById("deleteSummary");
@@ -23,9 +24,9 @@ const quantityChangeSummary = document.getElementById("quantityChangeSummary");
 const quantityChangeListBody = document.getElementById("quantityChangeListBody");
 const btnQuantityChangeCancel = document.getElementById("btnQuantityChangeCancel");
 const btnQuantityChangeOk = document.getElementById("btnQuantityChangeOk");
-const numericInputs = Array.from(
-  formAdd.querySelectorAll("input[name='diameter'], input[name='thickness'], input[name='quantity']")
-);
+// const numericInputs = Array.from(
+//   formAdd.querySelectorAll("input[name='diameter'], input[name='thickness'], input[name='quantity']")
+// );
 const selectSymbol = document.getElementById("selectSymbol");
 const subtitle = document.getElementById("subtitle");
 
@@ -34,6 +35,8 @@ let sortStateBySymbol = {};
 let checkedIds = [];
 // 数量編集の未保存変更（行id + 変更後quantity）
 let quantityChanges = [];
+
+const { normalizeIntegerText, readNumber, formatMaterialText } = initHelpers({});
 
 function setStatus(message, kind = "info") {
   if (!elStatus) return;
@@ -93,11 +96,13 @@ function setChecked(id, nextChecked) {
   }
 }
 
+////後ほどstatus.jsに移す予定
 function updateDeleteButtonState() {
   if (!btnDelete) return;
   btnDelete.disabled = checkedIds.length === 0;
 }
 
+//後ほどstatus.jsに移す予定
 function updateRefreshButtonState() {
   if (!btnRefresh) return;
   btnRefresh.disabled = quantityChanges.length === 0;
@@ -387,93 +392,20 @@ async function fetchMaterials() {
 
 /** 新規登録ダイアログ関連の処理 */
 
-function openAddDialog() {
-  if (!dialogAdd) return;
-  formAdd.reset();
-  dialogAdd.showModal();
-  createSymbolOptions();
-  const first = formAdd.querySelector("select[name='symbol']");
-  if (first) first.focus();
-}
+const { openAddDialog } = initAddDialog({
+  dialogAdd,
+  formAdd,
+  btnAddOk,
+  btnAddCancel,
+  btnAddRow,
+  btnDelete,
+  setStatus,
+  fetchMaterials,
+  selectSymbol,
+  updateDeleteButtonState,
+  updateRefreshButtonState,
+});
 
-function closeAddDialog() {
-  formAdd.reset();
-  dialogAdd.close();
-}
-
-function createSymbolOptions() {
-  const select = document.querySelector("select[name='symbol']");
-  if (!select) return;
-  if (select.options.length === 0) {
-    selectSymbols.forEach(({ value, label }) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = label;
-      select.appendChild(option);
-    });
-  }
-}
-
-function createDiameterTexts(symbol) {
-  const diameterLabel = document.getElementById("diameterLabel");
-  const diameterSuffix = document.getElementById("diameterSuffix");
-  const texts = selectSymbols.find(({ value }) => value === symbol);
-  diameterLabel.textContent = texts.diameterLabel;
-  diameterSuffix.textContent = texts.diameterSuffix;
-}
-
-function normalizeIntegerText(text) {
-  // 全角数字を半角へ
-  const half = String(text || "").replace(/[０-９]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
-  );
-  // 数字以外を削除（小数点も削除）
-  return half.replace(/[^0-9]/g, "");
-}
-
-function readNumber(formData, name) {
-  const raw = formData.get(name);
-  const n = Number.parseInt(String(raw), 10);
-  if (Number.isNaN(n)) return null;
-  return n;
-}
-
-async function insertMaterial(payload) {
-  setStatus("登録中...");
-  btnSubmitAdd.disabled = true;
-  btnAddRow.disabled = true;
-  if (btnDelete) btnDelete.disabled = true;
-
-  try {
-    const { error } = await addItem(payload);
-    if (error) {
-      alert("データを登録できませんでした。");
-      throw error;
-    }
-
-    setStatus("登録しました。再読み込みします...");
-    dialogAdd.close();
-    await fetchMaterials();
-  } catch (e) {
-    console.error(e);
-    setStatus(`登録エラー: ${e.message || e}`, "error");
-  } finally {
-    btnSubmitAdd.disabled = false;
-    btnAddRow.disabled = false;
-    updateDeleteButtonState();
-    updateRefreshButtonState();
-  }
-}
-
-function formatMaterialText(row) {
-  const sym = String(row.symbol || "").trim();
-  const d = row.diameter == null ? "" : `${row.diameter}A`;
-  const t = row.thickness == null ? "" : `${row.thickness}t`;
-  const c = String(row.coating_type || "").trim();
-  const dt = `${d}${t}`.trim();
-  const left = [sym, dt].filter(Boolean).join(" ").trim();
-  return [left, c].filter(Boolean).join(" ").trim();
-}
 
 /** 削除ダイアログ関連の処理 */
 
@@ -776,6 +708,7 @@ function openQuantityCellEditor(td, row) {
 
 /** イベント系 */
 
+//更新ボタン押下処理
 btnRefresh.addEventListener("click", async () => {
   const activeEditor = elGroupContainer.querySelector("input.quantityEditor");
   if (activeEditor) activeEditor.blur();
@@ -848,48 +781,16 @@ elGroupContainer.addEventListener("click", (e) => {
   updateRefreshButtonState();
 });
 
+//新規登録ボタン押下処理
 btnAddRow.addEventListener("click", () => {
   openAddDialog();
 });
 
-btnDialogCancel.addEventListener("click", () => {
-  closeAddDialog();
-});
-
+// 登録ダイアログを閉じたときは入力内容をリセットする
 dialogAdd.addEventListener("close", () => {
   formAdd.reset();
 });
 
-for (const input of numericInputs) {
-  input.addEventListener("input", (ev) => {
-    const next = normalizeIntegerText(ev.target.value);
-    ev.target.value = next;
-  });
-}
-
-formAdd.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-
-  const fd = new FormData(formAdd);
-  const payload = {
-    symbol: String(fd.get("symbol") || "").trim(),
-    diameter: readNumber(fd, "diameter"),
-    thickness: readNumber(fd, "thickness"),
-    coating_type: String(fd.get("coating_type") || "").trim() || null,
-    quantity: readNumber(fd, "quantity"),
-  };
-
-  if (!payload.symbol) {
-    setStatus("symbol は必須です。", "error");
-    return;
-  }
-  if (payload.diameter === null || payload.thickness === null || payload.quantity === null) {
-    setStatus("diameter / thickness / quantity は数値で入力してください。", "error");
-    return;
-  }
-
-  await insertMaterial(payload);
-});
 
 if (btnDelete) {
   btnDelete.addEventListener("click", () => {
@@ -928,9 +829,9 @@ if (formQuantityChange) {
   });
 }
 
-selectSymbol.addEventListener("change", (ev) => {
-  createDiameterTexts(ev.target.value);
-});
+// selectSymbol.addEventListener("change", (ev) => {
+//   createDiameterTexts(ev.target.value);
+// });
 
 /** 初期化 ここからスタート */
 updateDeleteButtonState();

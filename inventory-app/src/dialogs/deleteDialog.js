@@ -1,5 +1,6 @@
-import {  deleteItem } from "../db.js";
+import { deleteItem } from "../db.js";
 import { initHelpers } from "../utils/helpers.js";
+import { state } from "../utils/state.js";
 
 const { formatMaterialText } = initHelpers({});
 
@@ -15,23 +16,21 @@ export function initDeleteDialog({
     btnRefresh,
     setStatus,
     fetchMaterials,
-    updateDeleteButtonState,
-    updateRefreshButtonState,
+    updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
+    updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
     toId,
     getQuantityChange,
-    allRows,
-    checkedIds,
 }) {
 
      /** 削除ダイアログ関連 */
 
     // ダイアログを開く関数
      function openDeleteDialog() {
-        console.log("Opening delete dialog with checkedIds:", checkedIds);
         if (!dialogDelete || !deleteListBody) return;
-        if (!checkedIds.length) return;
+        if (!state.checkedIds.length) return;
 
-        const selected = allRows.filter((r) => checkedIds.includes(toId(r.id)));
+        console.log("openDeleteDialog", { checkedIds: state.checkedIds, allRows: state.allRows }); // デバッグ用ログ
+        const selected = state.allRows.filter((r) => state.checkedIds.includes(toId(r.id)));
         deleteListBody.innerHTML = "";
 
         if (deleteSummary) deleteSummary.textContent = `${selected.length}件を削除します。よろしいですか？`;
@@ -79,7 +78,7 @@ export function initDeleteDialog({
                 throw error;
             }
 
-            checkedIds = [];
+            state.checkedIds = [];
             closeDeleteDialog();
             await fetchMaterials();
         } catch (e) {
@@ -100,8 +99,8 @@ export function initDeleteDialog({
     if (formDelete) {
         formDelete.addEventListener("submit", async (ev) => {
             ev.preventDefault();
-            if (!checkedIds.length) return;
-            await deleteMaterialsByIds([...checkedIds]);
+            if (!state.checkedIds.length) return;
+            await deleteMaterialsByIds([...state.checkedIds]);
         });
     }
 

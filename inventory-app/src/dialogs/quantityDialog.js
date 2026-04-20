@@ -1,0 +1,148 @@
+import { updateItem } from "../db.js";
+import { initHelpers } from "../utils/helpers.js";
+import { state } from "../utils/state.js";
+
+const { formatMaterialText } = initHelpers({});
+
+export function initQuantityDialog({
+    dialogQuantityChange,
+    quantityChangeListBody,
+    quantityChangeSummary,
+    btnQuantityChangeOk,
+    btnQuantityChangeCancel,
+    btnAddRow,
+    btnDelete,
+    btnRefresh,
+    setStatus,
+    fetchMaterials,
+    updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
+    updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
+    toId,
+    clearQuantityChanges,
+}) {
+
+    /** 数量変更ダイアログ関連 */
+
+    // ダイアログを開く関数
+    function openQuantityChangeDialog() {
+        if (!dialogQuantityChange || !quantityChangeListBody) return;
+        if (!state.quantityChanges.length) return;
+
+        const items = state.quantityChanges
+            .map((ch) => {
+                const row = state.allRows.find((r) => toId(r.id) === ch.id);
+                if (!row) return null;
+                return {
+                    row,
+                    before: row.quantity == null ? "" : String(row.quantity),
+                    after: String(ch.quantity),
+                };
+            })
+            .filter(Boolean);
+
+        quantityChangeListBody.innerHTML = "";
+        if (quantityChangeSummary) {
+            quantityChangeSummary.textContent = `${items.length}件の数量を変更します。よろしいですか？`;
+        }
+
+        for (const item of items) {
+            const tr = document.createElement("tr");
+            const tdMat = document.createElement("td");
+            tdMat.textContent = `${formatMaterialText(item.row)}`;
+            const tdQty = document.createElement("td");
+            tdQty.className = "num";
+            tdQty.textContent = `${item.before} → ${item.after}`;
+            tr.appendChild(tdMat);
+            tr.appendChild(tdQty);
+            quantityChangeListBody.appendChild(tr);
+        }
+        dialogQuantityChange.showModal();
+    }
+
+
+    // ダイアログを閉じる関数
+    function closeQuantityChangeDialog() {
+        if (!dialogQuantityChange) return;
+        dialogQuantityChange.close();
+    }
+
+
+    // 数量変更を更新する関数
+    async function updateQuantities() {
+        if (!state.quantityChanges.length) return;
+        setStatus("数量を更新中...");
+
+        if (btnQuantityChangeOk) btnQuantityChangeOk.disabled = true;
+        if (btnQuantityChangeCancel) btnQuantityChangeCancel.disabled = true;
+        if (btnDelete) btnDelete.disabled = true;
+        if (btnAddRow) btnAddRow.disabled = true;
+        if (btnRefresh) btnRefresh.disabled = true;
+
+        try {
+            const existing = new Set(state.allRows.map((r) => toId(r.id)));
+            const payload = state.quantityChanges
+                .filter((c) => existing.has(toId(c.id)))
+                .map(({ id, quantity }) => ({
+                    id,
+                    quantity,
+                }));
+
+            if (!payload.length) {
+                setStatus("更新対象が見つかりません。", "error");
+                return;
+            }
+
+            state.quantityChanges = state.quantityChanges.filter((c) =>
+                existing.has(toId(c.id))
+            );
+
+
+            for (const pl of payload) {
+                const { error } = await updateItem(pl);
+                if (error) {
+                    alert("データを更新できませんでした。");
+                    throw error;
+                }
+            }
+
+            clearQuantityChanges();
+            closeQuantityChangeDialog();
+            await fetchMaterials();
+            setStatus("");
+        } catch (e) {
+            console.error(e);
+            setStatus(`更新エラー: ${e.message || e}`, "error");
+        } finally {
+            if (btnQuantityChangeOk) btnQuantityChangeOk.disabled = false;
+            if (btnQuantityChangeCancel) btnQuantityChangeCancel.disabled = false;
+            if (btnAddRow) btnAddRow.disabled = false;
+            if (btnRefresh) updateRefreshButtonState();
+            if (btnDelete) updateDeleteButtonState();
+        }
+    }
+
+    
+    /**イベントリスナーの設定*/
+
+    // フォームの送信イベント
+    if (formQuantityChange) {
+        formQuantityChange.addEventListener("submit", async (ev) => {
+            ev.preventDefault();
+            if (!state.quantityChanges.length) return;
+            await updateQuantities();
+        });
+    }
+
+    // キャンセルボタンのクリックイベント
+    if (btnQuantityChangeCancel) {
+        btnQuantityChangeCancel.addEventListener("click", () => {
+            // キャンセル時はデータ更新・再描画しない
+            closeQuantityChangeDialog();
+        });
+    }
+
+    return {
+        openQuantityChangeDialog,
+    };
+
+}

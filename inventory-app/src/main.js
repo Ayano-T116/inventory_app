@@ -3,6 +3,8 @@ import { getAllItems, deleteItem, updateItem } from "./db.js";
 import { initAddDialog } from "./dialogs/addDialog.js";
 import { initHelpers } from "./utils/helpers.js";
 import { initDeleteDialog } from "./dialogs/deleteDialog.js";
+import { initQuantityDialog } from "./dialogs/quantityDialog.js";
+import { state } from "./utils/state.js";
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -31,13 +33,8 @@ const btnQuantityChangeOk = document.getElementById("btnQuantityChangeOk");
 const selectSymbol = document.getElementById("selectSymbol");
 const subtitle = document.getElementById("subtitle");
 
-let allRows = [];
-let sortStateBySymbol = {};
-let checkedIds = [];
-// 数量編集の未保存変更（行id + 変更後quantity）
-let quantityChanges = [];
+const { normalizeIntegerText } = initHelpers({});
 
-const { normalizeIntegerText, readNumber, formatMaterialText } = initHelpers({});
 
 function setStatus(message, kind = "info") {
   if (!elStatus) return;
@@ -84,58 +81,66 @@ function toId(value) {
 
 function isChecked(id) {
   const sid = toId(id);
-  return !!sid && checkedIds.includes(sid);
+  return !!sid && state.checkedIds.includes(sid);
 }
 
 function setChecked(id, nextChecked) {
   const sid = toId(id);
   if (!sid) return;
   if (nextChecked) {
-    if (!checkedIds.includes(sid)) checkedIds = [...checkedIds, sid];
+    if (!state.checkedIds.includes(sid)) state.checkedIds = [...state.checkedIds, sid];
   } else {
-    checkedIds = checkedIds.filter((x) => x !== sid);
+    state.checkedIds = state.checkedIds.filter((x) => x !== sid);
   }
 }
 
 ////後ほどstatus.jsに移す予定
 function updateDeleteButtonState() {
   if (!btnDelete) return;
-  btnDelete.disabled = checkedIds.length === 0;
+  btnDelete.disabled = state.checkedIds.length === 0;
 }
 
 //後ほどstatus.jsに移す予定
 function updateRefreshButtonState() {
   if (!btnRefresh) return;
-  btnRefresh.disabled = quantityChanges.length === 0;
+  btnRefresh.disabled = state.quantityChanges.length === 0;
 }
 
+//quantityChangesを取得する
 function getQuantityChange(id) {
   const sid = toId(id);
   if (!sid) return null;
-  return quantityChanges.find((x) => x.id === sid) || null;
+  return state.quantityChanges.find((x) => x.id === sid) || null;
 }
 
+//quantityChangesをセットする
 function setQuantityChange(id, quantity) {
   const sid = toId(id);
   if (!sid) return;
-  quantityChanges = quantityChanges.filter((x) => x.id !== sid);
+  state.quantityChanges = state.quantityChanges.filter((x) => x.id !== sid);
   if (quantity == null) {
     updateRefreshButtonState();
     return;
   }
-  quantityChanges = [...quantityChanges, { id: sid, quantity: Number(quantity) }];
+  state.quantityChanges = [...state.quantityChanges, { id: sid, quantity: Number(quantity) }];
+  updateRefreshButtonState();
+}
+
+//quantityChangesをクリアする
+function clearQuantityChanges() {
+  state.quantityChanges = [];
   updateRefreshButtonState();
 }
 
 /** ソート状態を見てテーブル内の表示順を調整 */
 function getSortedRows(symbol, rows) {
 
-  const state = sortStateBySymbol[symbol];
-  if (!state || state.direction === "none") return [...rows];
+  const sortState = state.sortStateBySymbol[symbol];
+  if (!sortState || sortState.direction === "none") return [...rows];
 
-  const dir = state.direction === "asc" ? 1 : -1;
+  const dir = sortState.direction === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => {
-    return compareValues(left[state.key], right[state.key], state.key) * dir;
+    return compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
   });
 }
 
@@ -159,14 +164,14 @@ function updateHeaderSortMark(sym, thead) {
     th.classList.remove("sorted");
     if (!mark) continue;
 
-    const state = sortStateBySymbol[sym];
-    if (!state || key !== state.key || state.direction === "none") {
+    const sortState = state.sortStateBySymbol[sym];
+    if (!sortState || key !== sortState.key || sortState.direction === "none") {
       mark.textContent = "-";
       continue;
     }
 
     th.classList.add("sorted");
-    mark.textContent = state.direction === "asc" ? "▲" : "▼";
+    mark.textContent = sortState.direction === "asc" ? "▲" : "▼";
   }
 }
 
@@ -264,7 +269,7 @@ function appendCells(tr, row) {
 function renderGroups() {
   elGroupContainer.innerHTML = "";
 
-  if (!allRows.length) {
+  if (!state.allRows.length) {
     const p = document.createElement("p");
     p.className = "muted emptyHint";
     p.textContent = "データがありません。右上の「新規行を追加」から登録できます。";
@@ -273,7 +278,7 @@ function renderGroups() {
   }
 
   // symbol ごとにまとめる (記号:[]),(記号:[]),...という形のmapにしてる
-  const bySymbol = groupBySymbol(allRows);
+  const bySymbol = groupBySymbol(state.allRows);
   //記号はあいうえお順にしてる
   const symbols = [...bySymbol.keys()].sort((a, b) => a.localeCompare(b, "ja"));
 
@@ -364,11 +369,11 @@ async function fetchMaterials() {
     }
 
     //画面表示
-    allRows = data || [];
+    state.allRows = data || [];
     // 既に存在しないIDは除外（削除後など）
-    const existing = new Set(allRows.map((r) => toId(r.id)));
-    checkedIds = checkedIds.filter((id) => existing.has(id));
-    quantityChanges = quantityChanges.filter((c) =>
+    const existing = new Set(state.allRows.map((r) => toId(r.id)));
+    state.checkedIds = state.checkedIds.filter((id) => existing.has(id));
+    state.quantityChanges = state.quantityChanges.filter((c) =>
       existing.has(toId(c.id))
     );
     updateDeleteButtonState();
@@ -383,7 +388,7 @@ async function fetchMaterials() {
   } catch (e) {
     console.error(e);
     setStatus(`エラー: ${e.message || e}`, "error");
-    allRows = [];
+    state.allRows = [];
     renderGroups();
   } finally {
     updateRefreshButtonState();
@@ -392,102 +397,7 @@ async function fetchMaterials() {
 }
 
 
-/** 数量変更ダイアログ関連の処理 */
-
-function closeQuantityChangeDialog() {
-  if (!dialogQuantityChange) return;
-  dialogQuantityChange.close();
-}
-
-function openQuantityChangeDialog() {
-  if (!dialogQuantityChange || !quantityChangeListBody) return;
-  if (!quantityChanges.length) return;
-
-  const items = quantityChanges
-    .map((ch) => {
-      const row = allRows.find((r) => toId(r.id) === ch.id);
-      if (!row) return null;
-      return {
-        row,
-        before: row.quantity == null ? "" : String(row.quantity),
-        after: String(ch.quantity),
-      };
-    })
-    .filter(Boolean);
-
-  quantityChangeListBody.innerHTML = "";
-  if (quantityChangeSummary) {
-    quantityChangeSummary.textContent = `${items.length}件の数量を変更します。よろしいですか？`;
-  }
-
-  for (const item of items) {
-    const tr = document.createElement("tr");
-    const tdMat = document.createElement("td");
-    tdMat.textContent = `${formatMaterialText(item.row)}`;
-    const tdQty = document.createElement("td");
-    tdQty.className = "num";
-    tdQty.textContent = `${item.before} → ${item.after}`;
-    tr.appendChild(tdMat);
-    tr.appendChild(tdQty);
-    quantityChangeListBody.appendChild(tr);
-  }
-
-  dialogQuantityChange.showModal();
-}
-
-async function updateQuantities() {
-  if (!quantityChanges.length) return;
-  setStatus("数量を更新中...");
-
-  if (btnQuantityChangeOk) btnQuantityChangeOk.disabled = true;
-  if (btnQuantityChangeCancel) btnQuantityChangeCancel.disabled = true;
-  if (btnDelete) btnDelete.disabled = true;
-  if (btnAddRow) btnAddRow.disabled = true;
-  if (btnRefresh) btnRefresh.disabled = true;
-
-  try {
-    const existing = new Set(allRows.map((r) => toId(r.id)));
-    const payload = quantityChanges
-      .filter((c) => existing.has(toId(c.id)))
-      .map(({ id, quantity }) => ({
-        id,
-        quantity,
-      }));
-
-    if (!payload.length) {
-      setStatus("更新対象が見つかりません。", "error");
-      return;
-    }
-
-    quantityChanges = quantityChanges.filter((c) =>
-      existing.has(toId(c.id))
-    );
-
-
-    for (const pl of payload) {
-      const { error } = updateItem(pl);
-      if (error) {
-        alert("データを更新できませんでした。");
-        throw error;
-      }
-    }
-
-    quantityChanges = [];
-    closeQuantityChangeDialog();
-    await fetchMaterials();
-    setStatus("");
-  } catch (e) {
-    console.error(e);
-    setStatus(`更新エラー: ${e.message || e}`, "error");
-  } finally {
-    if (btnQuantityChangeOk) btnQuantityChangeOk.disabled = false;
-    if (btnQuantityChangeCancel) btnQuantityChangeCancel.disabled = false;
-    if (btnAddRow) btnAddRow.disabled = false;
-    if (btnRefresh) updateRefreshButtonState();
-    if (btnDelete) updateDeleteButtonState();
-  }
-}
-
+/** 数量セルの値を変更する時の処理 */
 function openQuantityCellEditor(td, row) {
   if (!td || !row) return;
 
@@ -626,19 +536,9 @@ function openQuantityCellEditor(td, row) {
 
 /** イベント系 */
 
-//更新ボタン押下処理
-btnRefresh.addEventListener("click", async () => {
-  const activeEditor = elGroupContainer.querySelector("input.quantityEditor");
-  if (activeEditor) activeEditor.blur();
+/** ソート関連の処理 */
 
-  if (quantityChanges.length) {
-    openQuantityChangeDialog();
-    return;
-  }
-  fetchMaterials();
-});
-
-//カラム名が押下された場合の処理
+//カラム名押下処理
 elGroupContainer.addEventListener("click", (e) => {
   const btn = e.target.closest(".thBtn");
   if (!btn || !elGroupContainer.contains(btn)) return;
@@ -655,7 +555,7 @@ elGroupContainer.addEventListener("click", (e) => {
   if (!key) return;
 
   //symbolごと、カラムごとにソート状態を設定
-  const current = sortStateBySymbol[symbol] || { key: null, direction: "none" };
+  const current = state.sortStateBySymbol[symbol] || { key: null, direction: "none" };
   let newSortState;
   if (current.key !== key) {
     newSortState = { key, direction: "asc" };
@@ -667,56 +567,16 @@ elGroupContainer.addEventListener("click", (e) => {
     newSortState = { key, direction: "asc" };
   }
 
-  sortStateBySymbol[symbol] = newSortState;
-
-
+  state.sortStateBySymbol[symbol] = newSortState;
   rerenderWithSort();
 });
 
-// 行チェックON/OFF
-elGroupContainer.addEventListener("change", (e) => {
-  const cb = e.target.closest("input.rowCheck");
-  if (!cb || !elGroupContainer.contains(cb)) return;
-  const id = cb.dataset.id;
-  setChecked(id, cb.checked);
-  updateDeleteButtonState();
-});
-
-// 数量セルのクリックで編集inputへ置換
-elGroupContainer.addEventListener("click", (e) => {
-  const td = e.target.closest("td[data-editable='quantity']");
-  if (!td || !elGroupContainer.contains(td)) return;
-  if (td.querySelector("input.quantityEditor")) return;
-
-  const tr = td.closest("tr[data-id]");
-  if (!tr) return;
-
-  const id = toId(tr.dataset.id);
-  const row = allRows.find((r) => toId(r.id) === id);
-  if (!row) return;
-
-  openQuantityCellEditor(td, row);
-  updateRefreshButtonState();
-});
 
 /** 新規登録ダイアログ関連の処理 */
 
 //新規登録ボタン押下処理
 if (btnAddRow) {
   btnAddRow.addEventListener("click", () => {
-    const { openAddDialog } = initAddDialog({
-      dialogAdd,
-      formAdd,
-      btnAddOk,
-      btnAddCancel,
-      btnAddRow,
-      btnDelete,
-      setStatus,
-      fetchMaterials,
-      selectSymbol,
-      updateDeleteButtonState,
-      updateRefreshButtonState,
-    });
     openAddDialog();
   });
 }
@@ -728,51 +588,108 @@ dialogAdd.addEventListener("close", () => {
 
 /** 削除ダイアログ関連の処理 */
 
+// 行チェックON/OFF
+elGroupContainer.addEventListener("change", (e) => {
+  const cb = e.target.closest("input.rowCheck");
+  if (!cb || !elGroupContainer.contains(cb)) return;
+  const id = cb.dataset.id;
+  setChecked(id, cb.checked);
+  updateDeleteButtonState();
+});
+
 //削除ボタン押下処理
 if (btnDelete) {
   btnDelete.addEventListener("click", () => {
-    if (!checkedIds.length) return;
-    const { openDeleteDialog } = initDeleteDialog({
-      dialogDelete,
-      deleteListBody,
-      deleteSummary,
-      formDelete,
-      btnDeleteOk,
-      btnDeleteCancel,
-      btnAddRow,
-      btnDelete,
-      btnRefresh,
-      setStatus,
-      fetchMaterials,
-      updateDeleteButtonState,
-      updateRefreshButtonState,
-      toId,
-      getQuantityChange,
-      allRows,
-      checkedIds,
-    });
+    if (!state.checkedIds.length) return;
     openDeleteDialog();
   });
 }
 
+
 /** 数量変更ダイアログ関連の処理 */
 
-if (btnQuantityChangeCancel) {
-  btnQuantityChangeCancel.addEventListener("click", () => {
-    // キャンセル時はデータ更新・再描画しない
-    closeQuantityChangeDialog();
-  });
-}
+// 数量セルのクリックで編集inputへ置換
+elGroupContainer.addEventListener("click", (e) => {
+  const td = e.target.closest("td[data-editable='quantity']");
+  if (!td || !elGroupContainer.contains(td)) return;
+  if (td.querySelector("input.quantityEditor")) return;
 
-if (formQuantityChange) {
-  formQuantityChange.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    if (!quantityChanges.length) return;
-    await updateQuantities();
-  });
-}
+  const tr = td.closest("tr[data-id]");
+  if (!tr) return;
 
-/** 初期化 ここからスタート */
+  const id = toId(tr.dataset.id);
+  const row = state.allRows.find((r) => toId(r.id) === id);
+  if (!row) return;
+
+  openQuantityCellEditor(td, row);
+  updateRefreshButtonState();
+});
+
+//更新ボタン押下処理
+btnRefresh.addEventListener("click", async () => {
+  const activeEditor = elGroupContainer.querySelector("input.quantityEditor");
+  if (activeEditor) activeEditor.blur();
+
+  if (state.quantityChanges.length) {
+    openQuantityChangeDialog();
+    return;
+  }
+  fetchMaterials();
+});
+
+/** ダイアログ関連初期化 */
+
+const { openAddDialog } = initAddDialog({
+  dialogAdd,
+  formAdd,
+  btnAddOk,
+  btnAddCancel,
+  btnAddRow,
+  btnDelete,
+  setStatus,
+  fetchMaterials,
+  selectSymbol,
+  updateDeleteButtonState,
+  updateRefreshButtonState,
+});
+
+const { openDeleteDialog } = initDeleteDialog({
+  dialogDelete,
+  deleteListBody,
+  deleteSummary,
+  formDelete,
+  btnDeleteOk,
+  btnDeleteCancel,
+  btnAddRow,
+  btnDelete,
+  btnRefresh,
+  setStatus,
+  fetchMaterials,
+  updateDeleteButtonState,
+  updateRefreshButtonState,
+  toId,
+  getQuantityChange,
+});
+
+const { openQuantityChangeDialog } = initQuantityDialog({
+  dialogQuantityChange,
+  quantityChangeListBody,
+  quantityChangeSummary,
+  btnQuantityChangeOk,
+  btnQuantityChangeCancel,
+  btnAddRow,
+  btnDelete,
+  btnRefresh,
+  setStatus,
+  fetchMaterials,
+  updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
+  updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
+  toId,
+  clearQuantityChanges,
+});
+
+
+/** 本処理初期化 ここからスタート */
 updateDeleteButtonState();
 updateRefreshButtonState();
 fetchMaterials();

@@ -287,6 +287,9 @@ function renderGroups() {
     //mapの内容に入ってた[]を取り出す
     const rowsInGroup = getSortedRows(sym, bySymbol.get(sym));
 
+    if (!state.isCollapsedBySymbol[sym]) {
+      state.isCollapsedBySymbol[sym] = false;}
+
     const section = document.createElement("section");
     section.className = "groupBlock";
     section.setAttribute("data-symbol", sym);
@@ -297,8 +300,9 @@ function renderGroups() {
     const toggleBtn = document.createElement("button");
     toggleBtn.type = "button";
     toggleBtn.className = "groupToggle";
-    toggleBtn.textContent = "ー";
-    toggleBtn.setAttribute("aria-expanded", "true");
+    toggleBtn.textContent = state.isCollapsedBySymbol[sym] ? "＋" : "ー";;
+    
+    toggleBtn.setAttribute("aria-expanded", state.isCollapsedBySymbol[sym]);
     toggleBtn.setAttribute("aria-label", "テーブルの表示を切り替え");
 
     const title = document.createElement("h2");
@@ -313,12 +317,12 @@ function renderGroups() {
     innerWrap.className = "tableWrap groupTableWrap";
 
     const table = document.createElement("table");
-    table.className = "grid";
+    table.className = state.isCollapsedBySymbol[sym] ? "grid isCollapsed" : "grid";
 
     toggleBtn.addEventListener("click", () => {
-      const collapsed = table.classList.toggle("isCollapsed");
-      toggleBtn.textContent = collapsed ? "＋" : "ー";
-      toggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      state.isCollapsedBySymbol[sym] = table.classList.toggle("isCollapsed");
+      toggleBtn.textContent = state.isCollapsedBySymbol[sym] ? "＋" : "ー";
+      toggleBtn.setAttribute("aria-expanded", state.isCollapsedBySymbol[sym]);
     });
 
     const thead = document.createElement("thead");

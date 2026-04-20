@@ -4,6 +4,7 @@ export const state = {
   sortStateBySymbol: {},
   checkedIds: [],
   quantityChanges: [],
+  isCollapsedBySymbol: {},
 };
 
 // export function clearCheckedIds() {

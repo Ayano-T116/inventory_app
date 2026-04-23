@@ -1,6 +1,7 @@
 import { addItem } from "../db.js";
 import { selectSymbols } from "../utils/constants.js";
 import { initHelpers } from "../utils/helpers.js";
+import { state } from "../utils/state.js";
 
 const { normalizeIntegerText, readNumber } = initHelpers({});
 
@@ -65,6 +66,14 @@ export function initAddDialog({
         diameterSuffix.textContent = texts.diameterSuffix;
     }
 
+    //重複登録を防ぐためのチェック
+    function isDuplicate(payload) {
+        return state.allRows.some(row => row.symbol === payload.symbol
+            && row.diameter === payload.diameter
+            && row.thickness === payload.thickness
+            && (row.coating_type ?? "") === (payload.coating_type ?? ""));
+    }
+
     // DBに登録する関数
     async function insertMaterial(payload) {
         setStatus("登録中...");
@@ -119,7 +128,7 @@ export function initAddDialog({
             symbol: String(fd.get("symbol") || "").trim(),
             diameter: readNumber(fd, "diameter"),
             thickness: readNumber(fd, "thickness"),
-            coating_type: String(fd.get("coating_type") || "").trim() || null,
+            coating_type: String(fd.get("coating_type") || "").trim(),
             quantity: readNumber(fd, "quantity"),
         };
 
@@ -129,6 +138,12 @@ export function initAddDialog({
         }
         if (payload.diameter === null || payload.thickness === null || payload.quantity === null) {
             setStatus("diameter / thickness / quantity は数値で入力してください。", "error");
+            return;
+        }
+
+        if (isDuplicate(payload)) {
+            setStatus("同じ記号・口径・厚さ・表面処理の材料が既に存在しています。", "error");
+            alert("同じ記号・口径・厚さ・表面処理の材料が既に存在しています。");
             return;
         }
 

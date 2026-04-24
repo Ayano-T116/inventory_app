@@ -1,8 +1,6 @@
 import { deleteItem } from "../db.js";
-import { initHelpers } from "../utils/helpers.js";
-import { state } from "../utils/state.js";
-
-const { formatMaterialText } = initHelpers({});
+import { helpers } from "../utils/helpers.js";
+import { state, useState } from "../utils/state.js";
 
 export function initDeleteDialog({
     dialogDelete,
@@ -16,10 +14,6 @@ export function initDeleteDialog({
     btnRefresh,
     setStatus,
     fetchMaterials,
-    updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
-    updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
-    toId,
-    getQuantityChange,
 }) {
 
      /** 削除ダイアログ関連 */
@@ -30,7 +24,7 @@ export function initDeleteDialog({
         if (!state.checkedIds.length) return;
 
         console.log("openDeleteDialog", { checkedIds: state.checkedIds, allRows: state.allRows }); // デバッグ用ログ
-        const selected = state.allRows.filter((r) => state.checkedIds.includes(toId(r.id)));
+        const selected = state.allRows.filter((r) => state.checkedIds.includes(helpers.toId(r.id)));
         deleteListBody.innerHTML = "";
 
         if (deleteSummary) deleteSummary.textContent = `${selected.length}件を削除します。よろしいですか？`;
@@ -38,10 +32,10 @@ export function initDeleteDialog({
         for (const row of selected) {
             const tr = document.createElement("tr");
             const tdMat = document.createElement("td");
-            tdMat.textContent = formatMaterialText(row);
+            tdMat.textContent = helpers.formatMaterialText(row);
             const tdQty = document.createElement("td");
             tdQty.className = "num";
-            const pending = getQuantityChange(row.id);
+            const pending = useState.getQuantityChange(row.id);
             tdQty.textContent = pending
                 ? String(pending.quantity)
                 : row.quantity == null
@@ -87,9 +81,9 @@ export function initDeleteDialog({
         } finally {
             if (btnDeleteOk) btnDeleteOk.disabled = false;
             if (btnDeleteCancel) btnDeleteCancel.disabled = false;
-            updateDeleteButtonState();
+            btnDelete.disabled = useState.updateDeleteButtonState();
             if (btnAddRow) btnAddRow.disabled = false;
-            updateRefreshButtonState();
+            btnRefresh.disabled = useState.updateRefreshButtonState();
         }
     }
 

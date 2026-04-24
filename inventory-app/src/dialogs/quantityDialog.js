@@ -1,8 +1,6 @@
 import { updateItem } from "../db.js";
-import { initHelpers } from "../utils/helpers.js";
-import { state } from "../utils/state.js";
-
-const { formatMaterialText } = initHelpers({});
+import { helpers } from "../utils/helpers.js";
+import { state, useState } from "../utils/state.js";
 
 export function initQuantityDialog({
     dialogQuantityChange,
@@ -15,10 +13,6 @@ export function initQuantityDialog({
     btnRefresh,
     setStatus,
     fetchMaterials,
-    updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
-    updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
-    toId,
-    clearQuantityChanges,
 }) {
 
     /** 数量変更ダイアログ関連 */
@@ -30,7 +24,7 @@ export function initQuantityDialog({
 
         const items = state.quantityChanges
             .map((ch) => {
-                const row = state.allRows.find((r) => toId(r.id) === ch.id);
+                const row = state.allRows.find((r) => helpers.toId(r.id) === ch.id);
                 if (!row) return null;
                 return {
                     row,
@@ -48,7 +42,7 @@ export function initQuantityDialog({
         for (const item of items) {
             const tr = document.createElement("tr");
             const tdMat = document.createElement("td");
-            tdMat.textContent = `${formatMaterialText(item.row)}`;
+            tdMat.textContent = `${helpers.formatMaterialText(item.row)}`;
             const tdQty = document.createElement("td");
             tdQty.className = "num";
             tdQty.textContent = `${item.before} → ${item.after}`;
@@ -79,9 +73,9 @@ export function initQuantityDialog({
         if (btnRefresh) btnRefresh.disabled = true;
 
         try {
-            const existing = new Set(state.allRows.map((r) => toId(r.id)));
+            const existing = new Set(state.allRows.map((r) => helpers.toId(r.id)));
             const payload = state.quantityChanges
-                .filter((c) => existing.has(toId(c.id)))
+                .filter((c) => existing.has(helpers.toId(c.id)))
                 .map(({ id, quantity }) => ({
                     id,
                     quantity,
@@ -93,7 +87,7 @@ export function initQuantityDialog({
             }
 
             state.quantityChanges = state.quantityChanges.filter((c) =>
-                existing.has(toId(c.id))
+                existing.has(helpers.toId(c.id))
             );
 
 
@@ -105,7 +99,7 @@ export function initQuantityDialog({
                 }
             }
 
-            clearQuantityChanges();
+            btnRefresh.disabled = useState.clearQuantityChanges();
             closeQuantityChangeDialog();
             await fetchMaterials();
             setStatus("");
@@ -116,8 +110,8 @@ export function initQuantityDialog({
             if (btnQuantityChangeOk) btnQuantityChangeOk.disabled = false;
             if (btnQuantityChangeCancel) btnQuantityChangeCancel.disabled = false;
             if (btnAddRow) btnAddRow.disabled = false;
-            if (btnRefresh) updateRefreshButtonState();
-            if (btnDelete) updateDeleteButtonState();
+            if (btnRefresh) btnRefresh.disabled = useState.updateRefreshButtonState();
+            if (btnDelete) btnDelete.disabled = useState.updateDeleteButtonState();
         }
     }
 

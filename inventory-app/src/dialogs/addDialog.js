@@ -1,9 +1,8 @@
 import { addItem } from "../db.js";
 import { selectSymbols } from "../utils/constants.js";
-import { initHelpers } from "../utils/helpers.js";
-import { state } from "../utils/state.js";
+import { helpers } from "../utils/helpers.js";
+import { state, useState } from "../utils/state.js";
 
-const { normalizeIntegerText, readNumber } = initHelpers({});
 
 export function initAddDialog({
     dialogAdd,
@@ -12,11 +11,10 @@ export function initAddDialog({
     btnAddCancel,
     btnAddRow,
     btnDelete,
+    btnRefresh,
     setStatus,
     fetchMaterials,
     selectSymbol,
-    updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
-    updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
 }) {
 
     /** 新規登録ダイアログ関連 */
@@ -80,6 +78,7 @@ export function initAddDialog({
         btnAddOk.disabled = true;
         btnAddRow.disabled = true;
         if (btnDelete) btnDelete.disabled = true;
+        if (btnRefresh) btnRefresh.disabled = true;
 
         try {
             const { error } = await addItem(payload);
@@ -97,8 +96,8 @@ export function initAddDialog({
         } finally {
             btnAddOk.disabled = false;
             btnAddRow.disabled = false;
-            updateDeleteButtonState();
-            updateRefreshButtonState();
+            btnDelete.disabled = useState.updateDeleteButtonState();
+            btnRefresh.disabled = useState.updateRefreshButtonState();
         }
     }
 
@@ -114,7 +113,7 @@ export function initAddDialog({
     // 数値入力欄の整形
     for (const input of numericInputs) {
         input.addEventListener("input", (ev) => {
-            const next = normalizeIntegerText(ev.target.value);
+            const next = helpers.normalizeIntegerText(ev.target.value);
             ev.target.value = next;
         });
     }
@@ -126,10 +125,10 @@ export function initAddDialog({
         const fd = new FormData(formAdd);
         const payload = {
             symbol: String(fd.get("symbol") || "").trim(),
-            diameter: readNumber(fd, "diameter"),
-            thickness: readNumber(fd, "thickness"),
+            diameter: helpers.readNumber(fd, "diameter"),
+            thickness: helpers.readNumber(fd, "thickness"),
             coating_type: String(fd.get("coating_type") || "").trim(),
-            quantity: readNumber(fd, "quantity"),
+            quantity: helpers.readNumber(fd, "quantity"),
         };
 
         if (!payload.symbol) {

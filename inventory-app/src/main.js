@@ -1,10 +1,11 @@
 import { COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/constants.js";
 import { getAllItems, deleteItem, updateItem } from "./db.js";
+import { helpers } from "./utils/helpers.js";
+import { state, useState } from "./utils/state.js";
 import { initAddDialog } from "./dialogs/addDialog.js";
-import { initHelpers } from "./utils/helpers.js";
 import { initDeleteDialog } from "./dialogs/deleteDialog.js";
 import { initQuantityDialog } from "./dialogs/quantityDialog.js";
-import { state } from "./utils/state.js";
+
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -27,120 +28,26 @@ const quantityChangeSummary = document.getElementById("quantityChangeSummary");
 const quantityChangeListBody = document.getElementById("quantityChangeListBody");
 const btnQuantityChangeCancel = document.getElementById("btnQuantityChangeCancel");
 const btnQuantityChangeOk = document.getElementById("btnQuantityChangeOk");
-// const numericInputs = Array.from(
-//   formAdd.querySelectorAll("input[name='diameter'], input[name='thickness'], input[name='quantity']")
-// );
 const selectSymbol = document.getElementById("selectSymbol");
 const subtitle = document.getElementById("subtitle");
 
-const { normalizeIntegerText } = initHelpers({});
 
 
+/** 状態メッセージを設定 */
 function setStatus(message, kind = "info") {
   if (!elStatus) return;
   elStatus.textContent = message || "";
   elStatus.dataset.kind = kind;
 }
 
-/** 更新日時を整形する */
-function formatValue(key, value) {
-  if (value === null || value === undefined) return "";
-
-  if (key === "updated_at") {
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return String(value);
-
-    const formattedDate =
-      `${d.getFullYear()}/` +
-      `${String(d.getMonth() + 1).padStart(2, '0')}/` +
-      `${String(d.getDate()).padStart(2, '0')}`;
-
-    return formattedDate;
-  }
-
-  return String(value);
-}
-
-function compareValues(a, b, key) {
-  if (a === b) return 0;
-  if (a === null || a === undefined) return 1;
-  if (b === null || b === undefined) return -1;
-
-  if (key === "diameter" || key === "thickness" || key === "quantity") {
-    return Number(a) - Number(b);
-  }
-  if (key === "updated_at") {
-    return new Date(a).getTime() - new Date(b).getTime();
-  }
-  return String(a).localeCompare(String(b), "ja");
-}
-
-function toId(value) {
-  return value === null || value === undefined ? "" : String(value);
-}
-
-function isChecked(id) {
-  const sid = toId(id);
-  return !!sid && state.checkedIds.includes(sid);
-}
-
-function setChecked(id, nextChecked) {
-  const sid = toId(id);
-  if (!sid) return;
-  if (nextChecked) {
-    if (!state.checkedIds.includes(sid)) state.checkedIds = [...state.checkedIds, sid];
-  } else {
-    state.checkedIds = state.checkedIds.filter((x) => x !== sid);
-  }
-}
-
-////後ほどstatus.jsに移す予定
-function updateDeleteButtonState() {
-  if (!btnDelete) return;
-  btnDelete.disabled = state.checkedIds.length === 0;
-}
-
-//後ほどstatus.jsに移す予定
-function updateRefreshButtonState() {
-  if (!btnRefresh) return;
-  btnRefresh.disabled = state.quantityChanges.length === 0;
-}
-
-//quantityChangesを取得する
-function getQuantityChange(id) {
-  const sid = toId(id);
-  if (!sid) return null;
-  return state.quantityChanges.find((x) => x.id === sid) || null;
-}
-
-//quantityChangesをセットする
-function setQuantityChange(id, quantity) {
-  const sid = toId(id);
-  if (!sid) return;
-  state.quantityChanges = state.quantityChanges.filter((x) => x.id !== sid);
-  if (quantity == null) {
-    updateRefreshButtonState();
-    return;
-  }
-  state.quantityChanges = [...state.quantityChanges, { id: sid, quantity: Number(quantity) }];
-  updateRefreshButtonState();
-}
-
-//quantityChangesをクリアする
-function clearQuantityChanges() {
-  state.quantityChanges = [];
-  updateRefreshButtonState();
-}
 
 /** ソート状態を見てテーブル内の表示順を調整 */
 function getSortedRows(symbol, rows) {
-
   const sortState = state.sortStateBySymbol[symbol];
   if (!sortState || sortState.direction === "none") return [...rows];
-
   const dir = sortState.direction === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => {
-    return compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
+    return helpers.compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
   });
 }
 
@@ -174,6 +81,7 @@ function updateHeaderSortMark(sym, thead) {
     mark.textContent = sortState.direction === "asc" ? "▲" : "▼";
   }
 }
+
 
 /** ヘッダ行を作成する */
 function createHeaderRow(sym) {
@@ -214,6 +122,7 @@ function createHeaderRow(sym) {
   return tr;
 }
 
+
 /** セルを作成する */
 function appendCells(tr, row) {
 
@@ -222,9 +131,9 @@ function appendCells(tr, row) {
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.className = "rowCheck";
-  cb.checked = isChecked(row["id"]);
+  cb.checked = useState.isChecked(row["id"]);
   cb.setAttribute("aria-label", "この行を選択");
-  cb.dataset.id = toId(row["id"]);
+  cb.dataset.id = helpers.toId(row["id"]);
   tdCheck.appendChild(cb);
   tr.appendChild(tdCheck);
 
@@ -236,7 +145,7 @@ function appendCells(tr, row) {
     if (col.key === "quantity") td.dataset.editable = "quantity";
 
     //更新日時を整形する
-    const v = formatValue(col.key, row[col.key]);
+    const v = helpers.formatValue(col.key, row[col.key]);
 
     if (col.key === "diameter" || col.key === "thickness") {
       const wrap = document.createElement("div");
@@ -254,7 +163,7 @@ function appendCells(tr, row) {
       wrap.appendChild(unitSpan);
       td.appendChild(wrap);
     } else if (col.key === "quantity") {
-      const pending = getQuantityChange(row.id);
+      const pending = useState.getQuantityChange(row.id);
       if (pending) td.classList.add("cellQuantityChanged");
       td.textContent = pending ? String(pending.quantity) : v;
     } else {
@@ -264,6 +173,7 @@ function appendCells(tr, row) {
     tr.appendChild(td);
   }
 }
+
 
 /** symbolごとにテーブルを作成する */
 function renderGroups() {
@@ -353,10 +263,12 @@ function renderGroups() {
   }
 }
 
+
 //DBデータ取得以外の描画処理※ソートから使用
 function rerenderWithSort() {
   renderGroups();
 }
+
 
 /** 毎回呼ばれる最初の処理 */
 async function fetchMaterials() {
@@ -375,13 +287,13 @@ async function fetchMaterials() {
     //画面表示
     state.allRows = data || [];
     // 既に存在しないIDは除外（削除後など）
-    const existing = new Set(state.allRows.map((r) => toId(r.id)));
+    const existing = new Set(state.allRows.map((r) => helpers.toId(r.id)));
     state.checkedIds = state.checkedIds.filter((id) => existing.has(id));
     state.quantityChanges = state.quantityChanges.filter((c) =>
-      existing.has(toId(c.id))
+      existing.has(helpers.toId(c.id))
     );
-    updateDeleteButtonState();
-    updateRefreshButtonState();
+    btnDelete.disabled = useState.updateDeleteButtonState();
+    btnRefresh.disabled = useState.updateRefreshButtonState();
     rerenderWithSort();
     setStatus("");
     if (ENV === "prod") {
@@ -395,8 +307,8 @@ async function fetchMaterials() {
     state.allRows = [];
     renderGroups();
   } finally {
-    updateRefreshButtonState();
-    updateDeleteButtonState();
+    btnRefresh.disabled = useState.updateRefreshButtonState();
+    btnDelete.disabled = useState.updateDeleteButtonState();
   }
 }
 
@@ -405,10 +317,10 @@ async function fetchMaterials() {
 function openQuantityCellEditor(td, row) {
   if (!td || !row) return;
 
-  const id = toId(row.id);
+  const id = helpers.toId(row.id);
   const original =
     row.quantity == null ? null : Number.parseInt(String(row.quantity), 10);
-  const pending = getQuantityChange(row.id);
+  const pending = useState.getQuantityChange(row.id);
   const start = pending ? pending.quantity : original;
   const fixedWidth = `${Math.ceil(td.getBoundingClientRect().width)}px`;
   td.style.width = fixedWidth;
@@ -439,29 +351,29 @@ function openQuantityCellEditor(td, row) {
   };
 
   const syncStateFromValue = () => {
-    const normalized = normalizeIntegerText(input.value);
+    const normalized = helpers.normalizeIntegerText(input.value);
     if (input.value !== normalized) input.value = normalized;
 
     if (normalized === "") {
-      setQuantityChange(id, null);
+      btnRefresh.disabled = useState.setQuantityChange(id, null);
       setCellChangedClass(false);
       return;
     }
 
     const next = Number.parseInt(normalized, 10);
     if (Number.isNaN(next)) {
-      setQuantityChange(id, null);
+      btnRefresh.disabled = useState.setQuantityChange(id, null);
       setCellChangedClass(false);
       return;
     }
 
     if (original != null && next === original) {
-      setQuantityChange(id, null);
+      btnRefresh.disabled = useState.setQuantityChange(id, null);
       setCellChangedClass(false);
       return;
     }
 
-    setQuantityChange(id, next);
+    btnRefresh.disabled = useState.setQuantityChange(id, next);
     setCellChangedClass(true);
   };
 
@@ -474,10 +386,10 @@ function openQuantityCellEditor(td, row) {
     if (committed) return;
     committed = true;
 
-    const normalized = normalizeIntegerText(input.value);
+    const normalized = helpers.normalizeIntegerText(input.value);
 
     if (normalized === "") {
-      setQuantityChange(id, null);
+      btnRefresh.disabled = useState.setQuantityChange(id, null);
       setCellChangedClass(false);
       td.innerHTML = "";
       td.textContent = original == null ? "" : String(original);
@@ -489,10 +401,10 @@ function openQuantityCellEditor(td, row) {
     const isOriginal = original != null && next === original;
 
     if (isOriginal) {
-      setQuantityChange(id, null);
+      btnRefresh.disabled = useState.setQuantityChange(id, null);
       setCellChangedClass(false);
     } else {
-      setQuantityChange(id, next);
+      btnRefresh.disabled = useState.setQuantityChange(id, next);
       setCellChangedClass(true);
     }
 
@@ -522,13 +434,13 @@ function openQuantityCellEditor(td, row) {
       const revertIsOriginal = original != null && revert === original;
 
       if (revertIsOriginal || revert == null) {
-        setQuantityChange(id, null);
+        btnRefresh.disabled = useState.setQuantityChange(id, null);
         setCellChangedClass(false);
         td.innerHTML = "";
         td.textContent = original == null ? "" : String(original);
         restoreCellWidth();
       } else {
-        setQuantityChange(id, revert);
+        btnRefresh.disabled = useState.setQuantityChange(id, revert);
         setCellChangedClass(true);
         td.innerHTML = "";
         td.textContent = String(revert);
@@ -597,8 +509,8 @@ elGroupContainer.addEventListener("change", (e) => {
   const cb = e.target.closest("input.rowCheck");
   if (!cb || !elGroupContainer.contains(cb)) return;
   const id = cb.dataset.id;
-  setChecked(id, cb.checked);
-  updateDeleteButtonState();
+  useState.setChecked(id, cb.checked);
+  btnDelete.disabled = useState.updateDeleteButtonState();
 });
 
 //削除ボタン押下処理
@@ -621,12 +533,12 @@ elGroupContainer.addEventListener("click", (e) => {
   const tr = td.closest("tr[data-id]");
   if (!tr) return;
 
-  const id = toId(tr.dataset.id);
-  const row = state.allRows.find((r) => toId(r.id) === id);
+  const id = helpers.toId(tr.dataset.id);
+  const row = state.allRows.find((r) => helpers.toId(r.id) === id);
   if (!row) return;
 
   openQuantityCellEditor(td, row);
-  updateRefreshButtonState();
+  btnRefresh.disabled = useState.updateRefreshButtonState();
 });
 
 //更新ボタン押下処理
@@ -650,11 +562,10 @@ const { openAddDialog } = initAddDialog({
   btnAddCancel,
   btnAddRow,
   btnDelete,
+  btnRefresh,
   setStatus,
   fetchMaterials,
   selectSymbol,
-  updateDeleteButtonState,
-  updateRefreshButtonState,
 });
 
 const { openDeleteDialog } = initDeleteDialog({
@@ -669,10 +580,6 @@ const { openDeleteDialog } = initDeleteDialog({
   btnRefresh,
   setStatus,
   fetchMaterials,
-  updateDeleteButtonState,
-  updateRefreshButtonState,
-  toId,
-  getQuantityChange,
 });
 
 const { openQuantityChangeDialog } = initQuantityDialog({
@@ -686,14 +593,10 @@ const { openQuantityChangeDialog } = initQuantityDialog({
   btnRefresh,
   setStatus,
   fetchMaterials,
-  updateDeleteButtonState,    //後ほどstatus.jsから渡す予定
-  updateRefreshButtonState,   //後ほどstatus.jsから渡す予定
-  toId,
-  clearQuantityChanges,
 });
 
 
 /** 本処理初期化 ここからスタート */
-updateDeleteButtonState();
-updateRefreshButtonState();
+btnDelete.disabled = useState.updateDeleteButtonState();
+btnRefresh.disabled = useState.updateRefreshButtonState();
 fetchMaterials();

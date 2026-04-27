@@ -1,6 +1,6 @@
-import { deleteItem } from "../db.js";
 import { helpers } from "../utils/helpers.js";
 import { state, useState } from "../utils/state.js";
+import { createSelectedDate, deleteMaterialsByIds } from "../services/materialService.js"
 
 export function initDeleteDialog({
     dialogDelete,
@@ -16,15 +16,15 @@ export function initDeleteDialog({
     fetchMaterials,
 }) {
 
-     /** 削除ダイアログ関連 */
+    /** 削除ダイアログ関連 */
 
     // ダイアログを開く関数
-     function openDeleteDialog() {
+    function openDeleteDialog() {
         if (!dialogDelete || !deleteListBody) return;
         if (!state.checkedIds.length) return;
 
-        console.log("openDeleteDialog", { checkedIds: state.checkedIds, allRows: state.allRows }); // デバッグ用ログ
-        const selected = state.allRows.filter((r) => state.checkedIds.includes(helpers.toId(r.id)));
+        // const selected = state.allRows.filter((r) => state.checkedIds.includes(helpers.toId(r.id)));
+        const selected = createSelectedDate(state.allRows, state.checkedIds);
         deleteListBody.innerHTML = "";
 
         if (deleteSummary) deleteSummary.textContent = `${selected.length}件を削除します。よろしいですか？`;
@@ -56,8 +56,7 @@ export function initDeleteDialog({
     }
 
     // 削除処理を行う関数
-    async function deleteMaterialsByIds(ids) {
-        if (!ids.length) return;
+    async function deleteMaterials(ids) {
         setStatus("削除中...");
         if (btnDeleteOk) btnDeleteOk.disabled = true;
         if (btnDeleteCancel) btnDeleteCancel.disabled = true;
@@ -66,12 +65,7 @@ export function initDeleteDialog({
         if (btnRefresh) btnRefresh.disabled = true;
 
         try {
-            const { error } = await deleteItem(ids);
-            if (error) {
-                alert("データを削除できませんでした。");
-                throw error;
-            }
-
+            await deleteMaterialsByIds(ids);
             state.checkedIds = [];
             closeDeleteDialog();
             await fetchMaterials();
@@ -94,14 +88,13 @@ export function initDeleteDialog({
         formDelete.addEventListener("submit", async (ev) => {
             ev.preventDefault();
             if (!state.checkedIds.length) return;
-            await deleteMaterialsByIds([...state.checkedIds]);
+            await deleteMaterials([...state.checkedIds]);
         });
     }
 
     // キャンセルボタンのクリックイベント
     if (btnDeleteCancel) {
         btnDeleteCancel.addEventListener("click", () => {
-            // キャンセル時はチェック状態を維持し、再描画もしない
             closeDeleteDialog();
         });
     }

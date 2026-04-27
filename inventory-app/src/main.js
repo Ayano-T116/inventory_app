@@ -135,6 +135,12 @@ function appendCells(tr, row) {
   cb.setAttribute("aria-label", "この行を選択");
   cb.dataset.id = helpers.toId(row["id"]);
   tdCheck.appendChild(cb);
+  tdCheck.style.cursor = "pointer";
+  tdCheck.addEventListener("click", (e) => {
+    // 既にチェックボックス自身がクリックされた場合は何もしない
+    if (e.target.closest("input[type='checkbox']")) return;
+    cb.click();
+  });
   tr.appendChild(tdCheck);
 
   for (const col of COLUMNS) {
@@ -198,7 +204,8 @@ function renderGroups() {
     const rowsInGroup = getSortedRows(sym, bySymbol.get(sym));
 
     if (!state.isCollapsedBySymbol[sym]) {
-      state.isCollapsedBySymbol[sym] = false;}
+      state.isCollapsedBySymbol[sym] = false;
+    }
 
     const section = document.createElement("section");
     section.className = "groupBlock";
@@ -211,7 +218,7 @@ function renderGroups() {
     toggleBtn.type = "button";
     toggleBtn.className = "groupToggle";
     toggleBtn.textContent = state.isCollapsedBySymbol[sym] ? "＋" : "ー";;
-    
+
     toggleBtn.setAttribute("aria-expanded", state.isCollapsedBySymbol[sym]);
     toggleBtn.setAttribute("aria-label", "テーブルの表示を切り替え");
 
@@ -486,6 +493,7 @@ elGroupContainer.addEventListener("click", (e) => {
   state.sortStateBySymbol[symbol] = newSortState;
   rerenderWithSort();
 });
+
 
 
 /** 新規登録ダイアログ関連の処理 */

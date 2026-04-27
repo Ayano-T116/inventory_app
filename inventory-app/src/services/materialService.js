@@ -1,8 +1,8 @@
-import { addItem } from "../db.js";
+import { addItem, deleteItem } from "../db.js";
 import { helpers } from "../utils/helpers.js";
 
 
-/**ダイアログ関連のロジック */
+/**新規登録ダイアログ関連のロジック */
 
 //登録情報作成
 export function createPayload(fd) {
@@ -23,7 +23,7 @@ export async function insertMaterial(allRows, payload) {
     if (!payload.symbol) {
         throw new Error("symbol は必須です。");
     }
-    
+
     if (payload.diameter === null || payload.thickness === null || payload.quantity === null) {
         throw new Error("diameter / thickness / quantity は数値で入力してください。");
     }
@@ -32,12 +32,11 @@ export async function insertMaterial(allRows, payload) {
         throw new Error("重複エラー");
     }
     const { error } = await addItem(payload);
-            if (error) {
-                alert("データを登録できませんでした。");
-                throw error;
-            }
+    if (error) {
+        alert("データを登録できませんでした。");
+        throw error;
+    }
 }
-
 
 //重複登録を防ぐためのチェック
 function isDuplicate(allRows, payload) {
@@ -45,4 +44,24 @@ function isDuplicate(allRows, payload) {
         && row.diameter === payload.diameter
         && row.thickness === payload.thickness
         && (row.coating_type ?? "") === (payload.coating_type ?? ""));
+}
+
+
+/**削除ダイアログ関連のロジック */
+
+//削除情報作成
+export function createSelectedDate(allRows, checkedIds) {
+    return allRows.filter((r) => checkedIds.includes(helpers.toId(r.id)));
+}
+
+//DB削除処理
+export async function deleteMaterialsByIds(ids) {
+    if (!ids.length) 
+        throw new Error("削除対象がありません。");
+
+    const { error } = await deleteItem(ids);
+    if (error) {
+        alert("データを削除できませんでした。");
+        throw error;
+    }
 }

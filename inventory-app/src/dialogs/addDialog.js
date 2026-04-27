@@ -1,7 +1,8 @@
-import { addItem } from "../db.js";
 import { selectSymbols } from "../utils/constants.js";
 import { helpers } from "../utils/helpers.js";
 import { state, useState } from "../utils/state.js";
+import { insertMaterial, createPayload } from "../services/materialService.js";
+
 
 
 export function initAddDialog({
@@ -40,6 +41,36 @@ export function initAddDialog({
         dialogAdd.close();
     }
 
+    // 登録ボタン押下処理
+    async function addMaterials() {
+        const fd = new FormData(formAdd);
+        const payload = createPayload(fd); 
+
+        setStatus("登録中...");
+        btnAddOk.disabled = true;
+        btnAddRow.disabled = true;
+        if (btnDelete) btnDelete.disabled = true;
+        if (btnRefresh) btnRefresh.disabled = true;
+
+        try {
+            await insertMaterial(state.allRows, payload);
+            setStatus("登録しました。再読み込みします...");
+            dialogAdd.close();
+            await fetchMaterials();
+        } catch (e) {
+            if(e.message == "重複エラー") {
+                alert(`同じ記号・口径・厚さ・表面処理の材料が既に存在しています。`);
+            }
+            console.error(e);
+            setStatus(`登録エラー: ${e.message || e}`, "error");
+        } finally {
+            btnAddOk.disabled = false;
+            btnAddRow.disabled = false;
+            btnDelete.disabled = useState.updateDeleteButtonState();
+            btnRefresh.disabled = useState.updateRefreshButtonState();
+        }
+    }
+
 
     // 記号の選択肢を生成する関数
     function createSymbolOptions() {
@@ -64,43 +95,6 @@ export function initAddDialog({
         diameterSuffix.textContent = texts.diameterSuffix;
     }
 
-    //重複登録を防ぐためのチェック
-    function isDuplicate(payload) {
-        return state.allRows.some(row => row.symbol === payload.symbol
-            && row.diameter === payload.diameter
-            && row.thickness === payload.thickness
-            && (row.coating_type ?? "") === (payload.coating_type ?? ""));
-    }
-
-    // DBに登録する関数
-    async function insertMaterial(payload) {
-        setStatus("登録中...");
-        btnAddOk.disabled = true;
-        btnAddRow.disabled = true;
-        if (btnDelete) btnDelete.disabled = true;
-        if (btnRefresh) btnRefresh.disabled = true;
-
-        try {
-            const { error } = await addItem(payload);
-            if (error) {
-                alert("データを登録できませんでした。");
-                throw error;
-            }
-
-            setStatus("登録しました。再読み込みします...");
-            dialogAdd.close();
-            await fetchMaterials();
-        } catch (e) {
-            console.error(e);
-            setStatus(`登録エラー: ${e.message || e}`, "error");
-        } finally {
-            btnAddOk.disabled = false;
-            btnAddRow.disabled = false;
-            btnDelete.disabled = useState.updateDeleteButtonState();
-            btnRefresh.disabled = useState.updateRefreshButtonState();
-        }
-    }
-
 
 
     /**イベントリスナーの設定*/
@@ -118,35 +112,10 @@ export function initAddDialog({
         });
     }
 
-    // フォームの送信イベント
+    // 登録ボタンのクリックイベント
     formAdd.addEventListener("submit", async (ev) => {
         ev.preventDefault();
-
-        const fd = new FormData(formAdd);
-        const payload = {
-            symbol: String(fd.get("symbol") || "").trim(),
-            diameter: helpers.readNumber(fd, "diameter"),
-            thickness: helpers.readNumber(fd, "thickness"),
-            coating_type: String(fd.get("coating_type") || "").trim(),
-            quantity: helpers.readNumber(fd, "quantity"),
-        };
-
-        if (!payload.symbol) {
-            setStatus("symbol は必須です。", "error");
-            return;
-        }
-        if (payload.diameter === null || payload.thickness === null || payload.quantity === null) {
-            setStatus("diameter / thickness / quantity は数値で入力してください。", "error");
-            return;
-        }
-
-        if (isDuplicate(payload)) {
-            setStatus("同じ記号・口径・厚さ・表面処理の材料が既に存在しています。", "error");
-            alert("同じ記号・口径・厚さ・表面処理の材料が既に存在しています。");
-            return;
-        }
-
-        await insertMaterial(payload);
+        await addMaterials();
     });
 
     // キャンセルボタンのクリックイベント

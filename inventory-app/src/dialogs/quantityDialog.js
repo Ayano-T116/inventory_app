@@ -1,4 +1,3 @@
-// import { updateItem } from "../db.js";
 import { helpers } from "../utils/helpers.js";
 import { state, useState } from "../utils/state.js";
 import { createQuantityChangeData, updateMaterialsQuantity } from "../services/materialService.js";

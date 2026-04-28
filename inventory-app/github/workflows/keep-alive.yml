@@ -1,0 +1,24 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase API (prod)
+        run: |
+          echo "ping prod"
+          curl -f -X GET "https://aupzvtdbxdovjtdifexg.supabase.co/rest/v1/materials?select=id" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY_1 }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY_1 }}"
+
+      - name: Call Supabase API (dev)
+        run: |
+          echo "ping dev"
+          curl -f -X GET "https://uxoulajghqtscuythidk.supabase.co/rest/v1/materials?select=id" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY_2 }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY_2 }}"

@@ -299,6 +299,7 @@ async function fetchMaterials() {
     state.quantityChanges = state.quantityChanges.filter((c) =>
       existing.has(helpers.toId(c.id))
     );
+    
     btnDelete.disabled = useState.updateDeleteButtonState();
     btnRefresh.disabled = useState.updateRefreshButtonState();
     rerenderWithSort();

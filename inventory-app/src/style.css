@@ -35,7 +35,7 @@ body {
 
 .app {
   max-width: 1200px;
-  margin: 28px auto;
+  margin: 16px auto;
   padding: 0 16px;
 }
 
@@ -138,9 +138,37 @@ button:disabled:active {
   display: block;
 }
 
+.tabs {
+  display: flex;
+  gap: 1px;
+}
+
+.tabBtn {
+  color: #fbfbfb;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  width: 120px;
+  padding: 4px 20px;
+  margin: 0;
+  font-weight: inherit;
+  border: 2px solid #fbfbfb;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.tabBtn[aria-selected="true"] {
+  color: var(--text);
+  background-color: #fbfbfb;
+  font-weight: 800;
+}
+
+
 .sheet {
   background: var(--sheet);
   border-radius: var(--radius);
+  border-top-left-radius: 0px;
   box-shadow: var(--shadow);
   overflow: hidden;
   color: var(--text);

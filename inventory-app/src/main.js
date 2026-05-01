@@ -5,7 +5,7 @@ import { state, useState } from "./utils/state.js";
 import { initAddDialog } from "./dialogs/addDialog.js";
 import { initDeleteDialog } from "./dialogs/deleteDialog.js";
 import { initQuantityDialog } from "./dialogs/quantityDialog.js";
-
+import { getSortedRows, groupBySymbol } from "./services/renderService.js";
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -30,6 +30,8 @@ const btnQuantityChangeCancel = document.getElementById("btnQuantityChangeCancel
 const btnQuantityChangeOk = document.getElementById("btnQuantityChangeOk");
 const selectSymbol = document.getElementById("selectSymbol");
 const subtitle = document.getElementById("subtitle");
+const tabInsulation = document.getElementById("tabInsulation");
+const tabSheetMetal = document.getElementById("tabSheetMetal");
 
 
 
@@ -41,26 +43,26 @@ function setStatus(message, kind = "info") {
 }
 
 
-/** ソート状態を見てテーブル内の表示順を調整 */
-function getSortedRows(symbol, rows) {
-  const sortState = state.sortStateBySymbol[symbol];
-  if (!sortState || sortState.direction === "none") return [...rows];
-  const dir = sortState.direction === "asc" ? 1 : -1;
-  return [...rows].sort((left, right) => {
-    return helpers.compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
-  });
-}
+// /**外部へ ソート状態を見てテーブル内の表示順を調整 */
+// function getSortedRows(symbol, rows) {
+//   const sortState = state.sortStateBySymbol[symbol];
+//   if (!sortState || sortState.direction === "none") return [...rows];
+//   const dir = sortState.direction === "asc" ? 1 : -1;
+//   return [...rows].sort((left, right) => {
+//     return helpers.compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
+//   });
+// }
 
-/** symbol ごとにまとめる (記号:[]),(記号:[]),...の形にしてる*/
-function groupBySymbol(rows) {
-  const map = new Map();
-  for (const row of rows) {
-    const sym = row.symbol == null ? "" : String(row.symbol);
-    if (!map.has(sym)) map.set(sym, []);
-    map.get(sym).push(row);
-  }
-  return map;
-}
+// /**外部へ symbol ごとにまとめる (記号:[]),(記号:[]),...の形にしてる */
+// function groupBySymbol(rows) {
+//   const map = new Map();
+//   for (const row of rows) {
+//     const sym = row.symbol == null ? "" : String(row.symbol);
+//     if (!map.has(sym)) map.set(sym, []);
+//     map.get(sym).push(row);
+//   }
+//   return map;
+// }
 
 /** header行のソートマークを制御する */
 function updateHeaderSortMark(sym, thead) {
@@ -459,6 +461,22 @@ function openQuantityCellEditor(td, row) {
 }
 
 /** イベント系 */
+
+tabInsulation.addEventListener("click", () => {
+  if (state.tableName === "materials") return;
+  state.tableName = "materials";
+  tabInsulation.setAttribute("aria-selected", "true");
+  tabSheetMetal.setAttribute("aria-selected", "false");
+  fetchMaterials();
+});
+
+tabSheetMetal.addEventListener("click", () => {
+  if (state.tableName === "materials_metal") return;
+  state.tableName = "materials_metal";
+  tabSheetMetal.setAttribute("aria-selected", "true");
+  tabInsulation.setAttribute("aria-selected", "false");
+  fetchMaterials();
+});
 
 /** ソート関連の処理 */
 

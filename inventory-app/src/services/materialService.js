@@ -34,7 +34,7 @@ export async function insertMaterial(allRows, payload) {
     if (isDuplicate(allRows, payload)) {
         throw new Error("重複エラー");
     }
-    const { error } = await addItem(payload);
+    const { error } = await addItem(payload, state.tabName);
     if (error) {
         alert("データを登録できませんでした。");
         throw error;
@@ -53,7 +53,7 @@ function isDuplicate(allRows, payload) {
 /**削除ダイアログ関連のロジック */
 
 //削除情報作成
-export function createSelectedDate(allRows, checkedIds) {
+export function createSelectedData(allRows, checkedIds) {
     return allRows.filter((r) => checkedIds.includes(helpers.toId(r.id)));
 }
 
@@ -62,7 +62,7 @@ export async function deleteMaterialsByIds(ids) {
     if (!ids.length)
         throw new Error("削除対象がありません。");
 
-    const { error } = await deleteItem(ids);
+    const { error } = await deleteItem(ids, state.tabName);
     if (error) {
         alert("データを削除できませんでした。");
         throw error;
@@ -112,7 +112,7 @@ export async function updateMaterialsQuantity(allRows, quantityChanges) {
 
 
     for (const pl of payload) {
-        const { error } = await updateItem(pl);
+        const { error } = await updateItem(pl, state.tabName);
         if (error) {
             alert("データを更新できませんでした。");
             throw error;

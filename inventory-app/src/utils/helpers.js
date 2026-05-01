@@ -3,31 +3,40 @@
 
 // 全角数字を半角に変換し、数字以外を削除する
 function normalizeIntegerText(text) {
-    // 全角数字を半角へ
-    const half = String(text || "").replace(/[０-９]/g, (ch) =>
-        String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
-    );
-    // 数字以外を削除（小数点も削除）
-    return half.replace(/[^0-9]/g, "");
+  // 全角数字を半角へ
+  const half = String(text || "").replace(/[０-９]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+  );
+  // 数字以外を削除（小数点も削除）
+  return half.replace(/[^0-9]/g, "");
 }
 
 // フォームデータから数値を読み取る
 function readNumber(formData, name) {
-    const raw = formData.get(name);
-    const n = Number.parseInt(String(raw), 10);
-    if (Number.isNaN(n)) return null;
-    return n;
+  const raw = formData.get(name);
+  const n = Number.parseInt(String(raw), 10);
+  if (Number.isNaN(n)) return null;
+  return n;
 }
 
 // テキストとして整形する
-function formatMaterialText(row) {
-    const sym = String(row.symbol || "").trim();
+function formatMaterialText(row, tabName) {
+  const sym = String(row.symbol || "").trim();
+
+  if (tabName === "tabInsulation") {
     const d = row.diameter == null ? "" : `${row.diameter}A`;
     const t = row.thickness == null ? "" : `${row.thickness}t`;
     const c = String(row.coating_type || "").trim();
     const dt = `${d}${t}`.trim();
     const left = [sym, dt].filter(Boolean).join(" ").trim();
     return [left, c].filter(Boolean).join(" ").trim();
+
+  } else {
+    const g = row.gauge == null ? "" : `${String(row.gauge || "").trim()}番手`;
+    const c = String(row.color || "").trim();
+    const left = [sym, g].filter(Boolean).join(" ").trim();
+    return [left, c].filter(Boolean).join(" ").trim();
+  }
 }
 
 //IDを文字列化する
@@ -73,10 +82,10 @@ function compareValues(a, b, key) {
 /**関数をexport(他ファイルから使用できるようにする) */
 
 export const helpers = {
-    normalizeIntegerText,
-    readNumber,
-    formatMaterialText,
-    toId,
-    formatValue,
-    compareValues,
+  normalizeIntegerText,
+  readNumber,
+  formatMaterialText,
+  toId,
+  formatValue,
+  compareValues,
 };

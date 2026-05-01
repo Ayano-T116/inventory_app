@@ -7,7 +7,7 @@ export const state = {
   checkedIds: [],
   quantityChanges: [],
   isCollapsedBySymbol: {},
-  tableName: "materials",
+  tabName: "tabInsulation",
 };
 
 /**状態を操作する関数 */

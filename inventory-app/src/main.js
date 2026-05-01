@@ -1,5 +1,6 @@
-import { COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/constants.js";
-import { getAllItems, deleteItem, updateItem } from "./db.js";
+import { COLUMNS_materials, selectSymbols_materials, selectCoating_materials, ENV, prodMessage, devMessage,
+  COLUMNS_materials_metal, } from "./utils/constants.js";
+import { getAllItems } from "./db.js";
 import { helpers } from "./utils/helpers.js";
 import { state, useState } from "./utils/state.js";
 import { initAddDialog } from "./dialogs/addDialog.js";
@@ -86,7 +87,7 @@ function updateHeaderSortMark(sym, thead) {
 
 
 /** ヘッダ行を作成する */
-function createHeaderRow(sym) {
+function createHeaderRow(sym, columns) {
   const tr = document.createElement("tr");
 
   const thCheck = document.createElement("th");
@@ -95,7 +96,7 @@ function createHeaderRow(sym) {
   thCheck.textContent = "選択";
   tr.appendChild(thCheck);
 
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     const th = document.createElement("th");
     th.dataset.key = col.key;
     if (col.align === "num") th.classList.add("num");
@@ -106,7 +107,7 @@ function createHeaderRow(sym) {
 
     const labelSpan = document.createElement("span");
     if (col.key === "diameter") {
-      labelSpan.textContent = selectSymbols.find((item) => item.value === sym)?.diameterLabel;
+      labelSpan.textContent = selectSymbols_materials.find((item) => item.value === sym)?.diameterLabel;
     } else {
       labelSpan.textContent = col.label;
     }
@@ -126,7 +127,7 @@ function createHeaderRow(sym) {
 
 
 /** セルを作成する */
-function appendCells(tr, row) {
+function appendCells(tr, row, columns) {
 
   const tdCheck = document.createElement("td");
   tdCheck.className = "checkCell";
@@ -145,7 +146,7 @@ function appendCells(tr, row) {
   });
   tr.appendChild(tdCheck);
 
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     const td = document.createElement("td");
     td.classList.add("cell");
     td.tabIndex = 0;
@@ -155,7 +156,7 @@ function appendCells(tr, row) {
     //更新日時を整形する
     const v = helpers.formatValue(col.key, row[col.key]);
 
-    if (col.key === "diameter" || col.key === "thickness") {
+    if (col.key === "diameter" || col.key === "thickness" || col.key === "gauge") {
       const wrap = document.createElement("div");
       wrap.className = "unitCell";
       const valueSpan = document.createElement("span");
@@ -163,7 +164,9 @@ function appendCells(tr, row) {
       const unitSpan = document.createElement("span");
       unitSpan.className = "unit";
       if (col.key === "diameter") {
-        unitSpan.textContent = selectSymbols.find((item) => item.value === row.symbol)?.diameterSuffix || "A";
+        unitSpan.textContent = selectSymbols_materials.find((item) => item.value === row.symbol)?.diameterSuffix || "A";
+      } else if (col.key === "gauge") {
+        unitSpan.textContent = "番手";
       } else {
         unitSpan.textContent = "t";
       }
@@ -244,15 +247,19 @@ function renderGroups() {
       toggleBtn.setAttribute("aria-expanded", state.isCollapsedBySymbol[sym]);
     });
 
+    //カラム定義判断
+    const columns = state.tabName === "tabInsulation" ? COLUMNS_materials : COLUMNS_materials_metal;
+
+    //ヘッダ行作成
     const thead = document.createElement("thead");
-    thead.appendChild(createHeaderRow(sym));
+    thead.appendChild(createHeaderRow(sym, columns));
 
     //1行ずつ作成
     const tbody = document.createElement("tbody");
     for (const row of rowsInGroup) {
       const tr = document.createElement("tr");
       tr.dataset.id = row["id"];
-      appendCells(tr, row);
+      appendCells(tr, row, columns);
       tbody.appendChild(tr);
     }
 
@@ -287,7 +294,7 @@ async function fetchMaterials() {
 
   try {
     //DBからデータ取得
-    const { data, error } = await getAllItems();
+    const { data, error } = await getAllItems(state.tabName);
     if (error) {
       alert("データを取得できませんでした。");
       throw error;
@@ -463,16 +470,16 @@ function openQuantityCellEditor(td, row) {
 /** イベント系 */
 
 tabInsulation.addEventListener("click", () => {
-  if (state.tableName === "materials") return;
-  state.tableName = "materials";
+  if (state.tabName === "tabInsulation") return;
+  state.tabName = "tabInsulation";
   tabInsulation.setAttribute("aria-selected", "true");
   tabSheetMetal.setAttribute("aria-selected", "false");
   fetchMaterials();
 });
 
 tabSheetMetal.addEventListener("click", () => {
-  if (state.tableName === "materials_metal") return;
-  state.tableName = "materials_metal";
+  if (state.tabName === "tabSheetMetal") return;
+  state.tabName = "tabSheetMetal";
   tabSheetMetal.setAttribute("aria-selected", "true");
   tabInsulation.setAttribute("aria-selected", "false");
   fetchMaterials();

@@ -29,10 +29,11 @@ export function initQuantityDialog({
             quantityChangeSummary.textContent = `${items.length}件の数量を変更します。よろしいですか？`;
         }
 
+        const tabName = state.tabName 
         for (const item of items) {
             const tr = document.createElement("tr");
             const tdMat = document.createElement("td");
-            tdMat.textContent = `${helpers.formatMaterialText(item.row)}`;
+            tdMat.textContent = `${helpers.formatMaterialText(item.row, state.tabName)}`;
             const tdQty = document.createElement("td");
             tdQty.className = "num";
             tdQty.textContent = `${item.before} → ${item.after}`;

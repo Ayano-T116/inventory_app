@@ -1,4 +1,4 @@
-import { selectSymbols } from "../utils/constants.js";
+import { selectSymbols_materials } from "../utils/constants.js";
 import { helpers } from "../utils/helpers.js";
 import { state, useState } from "../utils/state.js";
 import { insertMaterial, createPayload } from "../services/materialService.js";
@@ -77,7 +77,7 @@ export function initAddDialog({
         const select = document.querySelector("select[name='symbol']");
         if (!select) return;
         if (select.options.length === 0) {
-            selectSymbols.forEach(({ value, label }) => {
+            selectSymbols_materials.forEach(({ value, label }) => {
                 const option = document.createElement("option");
                 option.value = value;
                 option.textContent = label;
@@ -90,7 +90,7 @@ export function initAddDialog({
     function createDiameterTexts(symbol) {
         const diameterLabel = document.getElementById("diameterLabel");
         const diameterSuffix = document.getElementById("diameterSuffix");
-        const texts = selectSymbols.find(({ value }) => value === symbol);
+        const texts = selectSymbols_materials.find(({ value }) => value === symbol);
         diameterLabel.textContent = texts.diameterLabel;
         diameterSuffix.textContent = texts.diameterSuffix;
     }

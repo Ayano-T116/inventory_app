@@ -2,7 +2,7 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: '0 0 */3 * *'
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,13 +12,13 @@ jobs:
       - name: Call Supabase API (prod)
         run: |
           echo "ping prod"
-          curl -f -X GET "https://aupzvtdbxdovjtdifexg.supabase.co/rest/v1/materials?select=id" \
+          curl -f -X GET "https://aupzvtdbxdovjtdifexg.supabase.co/rest/v1/materials?select=id&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY_1 }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY_1 }}"
 
       - name: Call Supabase API (dev)
         run: |
           echo "ping dev"
-          curl -f -X GET "https://uxoulajghqtscuythidk.supabase.co/rest/v1/materials?select=id" \
+          curl -f -X GET "https://uxoulajghqtscuythidk.supabase.co/rest/v1/materials?select=id&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY_2 }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY_2 }}"

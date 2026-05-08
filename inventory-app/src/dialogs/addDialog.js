@@ -71,7 +71,7 @@ export function initAddDialog({
                 console.error(e);
                 setStatus(`登録エラー: 同じ材料が既に登録されています。`, "error");
                 alert(`同じ材料が既に登録されています。`);
-            }else{
+            } else {
                 console.error(e);
                 setStatus(`登録エラー: ${e.message || e}`, "error");
                 alert(`${e.message || e}`);
@@ -106,16 +106,16 @@ export function initAddDialog({
     function createSymbolOptions(tabName) {
         const select = document.querySelector("select[name='symbol']");
         if (!select) return;
-        if (select.options.length === 0) {
+        select.innerHTML = "";
 
-            const selectSymbols = tabName === "tabInsulation" ? selectSymbols_materials : selectSymbols_materials_metal;
-            selectSymbols.forEach(({ value, label }) => {
-                const option = document.createElement("option");
-                option.value = value;
-                option.textContent = label;
-                select.appendChild(option);
-            });
-        }
+        const selectSymbols = tabName === "tabInsulation" ? selectSymbols_materials : selectSymbols_materials_metal;
+        selectSymbols.forEach(({ value, label }) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        });
+
     }
 
     // 表被仕様・色の選択肢を生成する関数
@@ -123,16 +123,15 @@ export function initAddDialog({
         const selectName = tabName === "tabInsulation" ? "coating_type" : "color";
         const select = document.querySelector(`select[name='${selectName}']`);
         if (!select) return;
-        if (select.options.length === 0) {
+        select.innerHTML = "";
 
-            const selectCoating = tabName === "tabInsulation" ? selectCoating_materials : selectColor_materials_metal;
-            selectCoating.forEach(({ value, label }) => {
-                const option = document.createElement("option");
-                option.value = value;
-                option.textContent = label;
-                select.appendChild(option);
-            });
-        }
+        const selectCoating = tabName === "tabInsulation" ? selectCoating_materials : selectColor_materials_metal;
+        selectCoating.forEach(({ value, label }) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        });
     }
 
 

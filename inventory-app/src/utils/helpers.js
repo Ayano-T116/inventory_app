@@ -7,8 +7,8 @@ function normalizeIntegerText(text) {
   const half = String(text || "").replace(/[０-９]/g, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
   );
-  // 数字以外を削除（小数点も削除）
-  return half.replace(/[^0-9]/g, "");
+  // 数字以外を削除（小数点も削除）(4桁までに制限)
+  return half.replace(/[^0-9]/g, "").slice(0, 4);
 }
 
 // 全角英数字を半角に変換し、英数字以外を削除する
@@ -17,8 +17,8 @@ function normalizeAlphanumericText(text) {
   const half = String(text || "").replace(/[０-９]/g, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
   );
-  // 英数字以外を削除
-  return half.replace(/[^A-Za-z0-9]/g, "");
+  // 英数字以外を削除(4桁までに制限)
+  return half.replace(/[^A-Za-z0-9]/g, "").slice(0, 4);
 }
 
 // フォームデータから数値を読み取る

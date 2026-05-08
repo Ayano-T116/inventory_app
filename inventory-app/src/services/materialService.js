@@ -73,8 +73,10 @@ function isDuplicate(allRows, payload, tabName) {
             && (row.coating_type ?? "") === (payload.coating_type ?? ""));
     } else {
         return allRows.some(row => row.symbol === payload.symbol
-            && row.gauge === payload.gauge
-            && row.color === payload.color)
+            && String(row.gauge || "") === String(payload.gauge || "") 
+            && row.color === payload.color);
+        
+
     }
 }
 

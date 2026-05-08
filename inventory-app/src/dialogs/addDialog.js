@@ -68,10 +68,14 @@ export function initAddDialog({
             await fetchMaterials();
         } catch (e) {
             if (e.message == "重複エラー") {
+                console.error(e);
+                setStatus(`登録エラー: 同じ材料が既に登録されています。`, "error");
                 alert(`同じ材料が既に登録されています。`);
+            }else{
+                console.error(e);
+                setStatus(`登録エラー: ${e.message || e}`, "error");
+                alert(`${e.message || e}`);
             }
-            console.error(e);
-            setStatus(`登録エラー: ${e.message || e}`, "error");
         } finally {
             btnAddOk.disabled = false;
             btnAddRow.disabled = false;

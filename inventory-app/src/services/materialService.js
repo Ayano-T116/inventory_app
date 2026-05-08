@@ -58,7 +58,6 @@ export async function insertMaterial(allRows, payload, tabName) {
 
     const { error } = await addItem(payload, state.tabName);
     if (error) {
-        alert("データを登録できませんでした。");
         throw error;
     }
 }

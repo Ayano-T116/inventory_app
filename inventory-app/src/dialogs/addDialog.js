@@ -74,7 +74,7 @@ export function initAddDialog({
             } else {
                 console.error(e);
                 setStatus(`登録エラー: ${e.message || e}`, "error");
-                alert(`${e.message || e}`);
+                alert(`データを登録できませんでした。\n ${e.message || e}`);
             }
         } finally {
             btnAddOk.disabled = false;

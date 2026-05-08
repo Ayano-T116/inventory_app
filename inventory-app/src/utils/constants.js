@@ -53,6 +53,9 @@ export const selectColor_materials_metal = [
   { value: "シルバー", label: "シルバー"},
   { value: "ガルバ", label: "ガルバ"},
   { value: "ニュークリーム", label: "ニュークリーム"},
+  { value: "レッド", label: "レッド"},
+  { value: "青", label: "青"},
+  { value: "SUS", label: "SUS"},
 ];
 
 export const duplicateKeys_materials_metal = [

@@ -8,52 +8,81 @@ import { state, useState } from "../utils/state.js";
 /**新規登録ダイアログ関連のロジック */
 
 //登録情報作成
-export function createPayload(fd) {
-    const payload = {
-        symbol: String(fd.get("symbol") || "").trim(),
-        diameter: helpers.readNumber(fd, "diameter"),
-        thickness: helpers.readNumber(fd, "thickness"),
-        coating_type: String(fd.get("coating_type") || "").trim(),
-        quantity: helpers.readNumber(fd, "quantity"),
-    };
-    return payload;
+export function createPayload(fd, tabName) {
+    if (tabName === "tabInsulation") {
+        const payload = {
+            symbol: String(fd.get("symbol") || "").trim(),
+            diameter: helpers.readNumber(fd, "diameter"),
+            thickness: helpers.readNumber(fd, "thickness"),
+            coating_type: String(fd.get("coating_type") || "").trim(),
+            quantity: helpers.readNumber(fd, "quantity"),
+        };
+        return payload;
+    } else {
+        const payload = {
+            symbol: String(fd.get("symbol") || "").trim(),
+            gauge: helpers.readNumber(fd, "gauge"),
+            color: String(fd.get("color") || "").trim(),
+            quantity: helpers.readNumber(fd, "quantity"),
+        };
+        return payload;
+    }
 }
 
 
 //DB登録処理
-export async function insertMaterial(allRows, payload) {
+export async function insertMaterial(allRows, payload, tabName) {
 
     if (!payload.symbol) {
         throw new Error("symbol は必須です。");
     }
 
-    if (payload.diameter === null || payload.thickness === null || payload.quantity === null) {
-        throw new Error("diameter / thickness / quantity は数値で入力してください。");
+    if (tabName === "tabInsulation") {
+        if (payload.diameter === null || payload.thickness === null || payload.quantity === null) {
+            throw new Error("diameter / thickness / quantity は数値で入力してください。");
+        }
+        if (isDuplicate(allRows, payload, tabName)) {
+            throw new Error("重複エラー");
+        }
+    } else {
+        if (payload.gauge === null) {
+            throw new Error("gaugeは英数字で入力してください。");
+        }
+        if (payload.quantity === null) {
+            throw new Error("quantity は数値で入力してください。");
+        }
+        if (isDuplicate(allRows, payload, tabName)) {
+            throw new Error("重複エラー");
+        }
     }
 
-    if (isDuplicate(allRows, payload)) {
-        throw new Error("重複エラー");
-    }
-    const { error } = await addItem(payload);
+    const { error } = await addItem(payload, state.tabName);
     if (error) {
-        alert("データを登録できませんでした。");
         throw error;
     }
 }
 
 //重複登録を防ぐためのチェック
-function isDuplicate(allRows, payload) {
-    return allRows.some(row => row.symbol === payload.symbol
-        && row.diameter === payload.diameter
-        && row.thickness === payload.thickness
-        && (row.coating_type ?? "") === (payload.coating_type ?? ""));
+function isDuplicate(allRows, payload, tabName) {
+    if (tabName === "tabInsulation") {
+        return allRows.some(row => row.symbol === payload.symbol
+            && row.diameter === payload.diameter
+            && row.thickness === payload.thickness
+            && (row.coating_type ?? "") === (payload.coating_type ?? ""));
+    } else {
+        return allRows.some(row => row.symbol === payload.symbol
+            && String(row.gauge || "") === String(payload.gauge || "") 
+            && row.color === payload.color);
+        
+
+    }
 }
 
 
 /**削除ダイアログ関連のロジック */
 
 //削除情報作成
-export function createSelectedDate(allRows, checkedIds) {
+export function createSelectedData(allRows, checkedIds) {
     return allRows.filter((r) => checkedIds.includes(helpers.toId(r.id)));
 }
 
@@ -62,9 +91,8 @@ export async function deleteMaterialsByIds(ids) {
     if (!ids.length)
         throw new Error("削除対象がありません。");
 
-    const { error } = await deleteItem(ids);
+    const { error } = await deleteItem(ids, state.tabName);
     if (error) {
-        alert("データを削除できませんでした。");
         throw error;
     }
 }
@@ -91,7 +119,7 @@ export function createQuantityChangeData(allRows, quantityChanges) {
 //DB更新処理
 export async function updateMaterialsQuantity(allRows, quantityChanges) {
 
-    if (!quantityChanges.length) 
+    if (!quantityChanges.length)
         throw new Error("更新対象がありません。");
 
     const existing = new Set(allRows.map((r) => helpers.toId(r.id)));
@@ -112,9 +140,8 @@ export async function updateMaterialsQuantity(allRows, quantityChanges) {
 
 
     for (const pl of payload) {
-        const { error } = await updateItem(pl);
+        const { error } = await updateItem(pl, state.tabName);
         if (error) {
-            alert("データを更新できませんでした。");
             throw error;
         }
     }

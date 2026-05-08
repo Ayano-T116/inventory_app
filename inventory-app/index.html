@@ -25,9 +25,13 @@
     </header>
 
     <main class="main">
+      <div class="tabs" role="tablist" aria-label="表示切り替えタブ">
+        <button id="tabInsulation" class="tabBtn" role="tab" aria-selected="true" type="button">保温</button>
+        <button id="tabSheetMetal" class="tabBtn" role="tab" aria-selected="false" type="button">板金</button>
+      </div>
       <section class="sheet">
-
         <div class="tableWrap" role="region" aria-label="在庫一覧">
+
           <div id="groupContainer" class="groupContainer"></div>
         </div>
         <!-- 
@@ -57,32 +61,49 @@
           <select id="selectSymbol" name="symbol" required>
           </select>
         </label>
-        <div class="dtGroup" aria-label="口径と厚み">
+        <!-- 保温タブの場合 口径と厚み -->
+        <div id="insulation">
+          <div class="dtGroup">
+            <label class="field">
+              <span id="diameterLabel" class="label">口径</span>
+              <div class="inputWithUnit">
+                <input name="diameter" type="text" inputmode="numeric" required autocomplete="off" />
+                <span id="diameterSuffix" class="unitSuffix" aria-hidden="true">A</span>
+              </div>
+            </label>
+            <label class="field">
+              <span class="label">厚み</span>
+              <div class="inputWithUnit">
+                <input name="thickness" type="text" inputmode="numeric" required autocomplete="off" />
+                <span class="unitSuffix" aria-hidden="true">t</span>
+              </div>
+            </label>
+          </div>
           <label class="field">
-            <span id="diameterLabel" class="label">口径</span>
-            <div class="inputWithUnit">
-              <input name="diameter" type="text" inputmode="numeric" required autocomplete="off" />
-              <span id="diameterSuffix" class="unitSuffix" aria-hidden="true">A</span>
-            </div>
-          </label>
-          <label class="field">
-            <span class="label">厚み</span>
-            <div class="inputWithUnit">
-              <input name="thickness" type="text" inputmode="numeric" required autocomplete="off" />
-              <span class="unitSuffix" aria-hidden="true">t</span>
-            </div>
+            <span class="label">表被仕様</span>
+            <select name="coating_type">
+            </select>
           </label>
         </div>
-        <label class="field">
-          <span class="label">表被仕様</span>
-          <select name="coating_type">
-            <option value="">選択なし</option>
-            <option value="ALK">ALK</option>
-            <option value="ALKP">ALKP</option>
-            <option value="ALGC">ALGC</option>
-            <option value="ALGCP">ALGCP</option>
-          </select>
-        </label>
+        <!-- ここまで -->
+        <!-- 板金タブの場合 番手 -->
+        <div id="metal">
+          <div class="dtGroup">
+            <label class="field">
+              <span id="gaugeLabel" class="label">番手</span>
+              <div class="inputWithUnit">
+                <input name="gauge" type="text" inputmode="url" required autocomplete="off" />
+                <span id="gaugeSuffix" class="unitSuffix" aria-hidden="true">番</span>
+              </div>
+            </label>
+          </div>
+          <label class="field">
+            <span class="label">色</span>
+            <select name="color">
+            </select>
+          </label>
+        </div>
+        <!-- ここまで -->
         <label class="field">
           <span class="label">数量</span>
           <input name="quantity" type="text" inputmode="numeric" required autocomplete="off" />

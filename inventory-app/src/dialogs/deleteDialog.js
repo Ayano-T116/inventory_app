@@ -1,6 +1,6 @@
 import { helpers } from "../utils/helpers.js";
 import { state, useState } from "../utils/state.js";
-import { createSelectedDate, deleteMaterialsByIds } from "../services/materialService.js"
+import { createSelectedData, deleteMaterialsByIds } from "../services/materialService.js"
 
 export function initDeleteDialog({
     dialogDelete,
@@ -23,8 +23,7 @@ export function initDeleteDialog({
         if (!dialogDelete || !deleteListBody) return;
         if (!state.checkedIds.length) return;
 
-        // const selected = state.allRows.filter((r) => state.checkedIds.includes(helpers.toId(r.id)));
-        const selected = createSelectedDate(state.allRows, state.checkedIds);
+        const selected = createSelectedData(state.allRows, state.checkedIds);
         deleteListBody.innerHTML = "";
 
         if (deleteSummary) deleteSummary.textContent = `${selected.length}件を削除します。よろしいですか？`;
@@ -32,7 +31,7 @@ export function initDeleteDialog({
         for (const row of selected) {
             const tr = document.createElement("tr");
             const tdMat = document.createElement("td");
-            tdMat.textContent = helpers.formatMaterialText(row);
+            tdMat.textContent = helpers.formatMaterialText(row, state.tabName);
             const tdQty = document.createElement("td");
             tdQty.className = "num";
             const pending = useState.getQuantityChange(row.id);
@@ -72,6 +71,7 @@ export function initDeleteDialog({
         } catch (e) {
             console.error(e);
             setStatus(`削除エラー: ${e.message || e}`, "error");
+            alert(`データを削除できませんでした。\n ${e.message || e}`);
         } finally {
             if (btnDeleteOk) btnDeleteOk.disabled = false;
             if (btnDeleteCancel) btnDeleteCancel.disabled = false;

@@ -1,11 +1,12 @@
-import { COLUMNS, selectSymbols, ENV, prodMessage, devMessage } from "./utils/constants.js";
-import { getAllItems, deleteItem, updateItem } from "./db.js";
+import { COLUMNS_materials, selectSymbols_materials, selectCoating_materials, ENV, prodMessage, devMessage,
+  COLUMNS_materials_metal, } from "./utils/constants.js";
+import { getAllItems } from "./db.js";
 import { helpers } from "./utils/helpers.js";
 import { state, useState } from "./utils/state.js";
 import { initAddDialog } from "./dialogs/addDialog.js";
 import { initDeleteDialog } from "./dialogs/deleteDialog.js";
 import { initQuantityDialog } from "./dialogs/quantityDialog.js";
-
+import { getSortedRows, groupBySymbol } from "./services/renderService.js";
 
 const elGroupContainer = document.getElementById("groupContainer");
 const elStatus = document.getElementById("status");
@@ -30,6 +31,10 @@ const btnQuantityChangeCancel = document.getElementById("btnQuantityChangeCancel
 const btnQuantityChangeOk = document.getElementById("btnQuantityChangeOk");
 const selectSymbol = document.getElementById("selectSymbol");
 const subtitle = document.getElementById("subtitle");
+const tabInsulation = document.getElementById("tabInsulation");
+const tabSheetMetal = document.getElementById("tabSheetMetal");
+const fieldInsulation = document.getElementById("insulation");
+const fieldMetal = document.getElementById("metal");
 
 
 
@@ -40,27 +45,6 @@ function setStatus(message, kind = "info") {
   elStatus.dataset.kind = kind;
 }
 
-
-/** ソート状態を見てテーブル内の表示順を調整 */
-function getSortedRows(symbol, rows) {
-  const sortState = state.sortStateBySymbol[symbol];
-  if (!sortState || sortState.direction === "none") return [...rows];
-  const dir = sortState.direction === "asc" ? 1 : -1;
-  return [...rows].sort((left, right) => {
-    return helpers.compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
-  });
-}
-
-/** symbol ごとにまとめる (記号:[]),(記号:[]),...の形にしてる*/
-function groupBySymbol(rows) {
-  const map = new Map();
-  for (const row of rows) {
-    const sym = row.symbol == null ? "" : String(row.symbol);
-    if (!map.has(sym)) map.set(sym, []);
-    map.get(sym).push(row);
-  }
-  return map;
-}
 
 /** header行のソートマークを制御する */
 function updateHeaderSortMark(sym, thead) {
@@ -84,19 +68,21 @@ function updateHeaderSortMark(sym, thead) {
 
 
 /** ヘッダ行を作成する */
-function createHeaderRow(sym) {
+function createHeaderRow(sym, columns) {
   const tr = document.createElement("tr");
 
   const thCheck = document.createElement("th");
   thCheck.className = "checkCell";
   thCheck.setAttribute("aria-label", "選択");
   thCheck.textContent = "選択";
+  thCheck.style.width = "10%";
   tr.appendChild(thCheck);
 
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     const th = document.createElement("th");
     th.dataset.key = col.key;
     if (col.align === "num") th.classList.add("num");
+    if (col.width) th.style.width = col.width;
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -104,7 +90,7 @@ function createHeaderRow(sym) {
 
     const labelSpan = document.createElement("span");
     if (col.key === "diameter") {
-      labelSpan.textContent = selectSymbols.find((item) => item.value === sym)?.diameterLabel;
+      labelSpan.textContent = selectSymbols_materials.find((item) => item.value === sym)?.diameterLabel;
     } else {
       labelSpan.textContent = col.label;
     }
@@ -124,7 +110,7 @@ function createHeaderRow(sym) {
 
 
 /** セルを作成する */
-function appendCells(tr, row) {
+function appendCells(tr, row, columns) {
 
   const tdCheck = document.createElement("td");
   tdCheck.className = "checkCell";
@@ -136,6 +122,7 @@ function appendCells(tr, row) {
   cb.dataset.id = helpers.toId(row["id"]);
   tdCheck.appendChild(cb);
   tdCheck.style.cursor = "pointer";
+  tdCheck.style.width = "10%";
   tdCheck.addEventListener("click", (e) => {
     // 既にチェックボックス自身がクリックされた場合は何もしない
     if (e.target.closest("input[type='checkbox']")) return;
@@ -143,17 +130,18 @@ function appendCells(tr, row) {
   });
   tr.appendChild(tdCheck);
 
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     const td = document.createElement("td");
     td.classList.add("cell");
     td.tabIndex = 0;
     if (col.align === "num") td.classList.add("num");
     if (col.key === "quantity") td.dataset.editable = "quantity";
+    if (col.width) td.style.width = col.width;
 
     //更新日時を整形する
     const v = helpers.formatValue(col.key, row[col.key]);
 
-    if (col.key === "diameter" || col.key === "thickness") {
+    if (col.key === "diameter" || col.key === "thickness" || col.key === "gauge") {
       const wrap = document.createElement("div");
       wrap.className = "unitCell";
       const valueSpan = document.createElement("span");
@@ -161,7 +149,9 @@ function appendCells(tr, row) {
       const unitSpan = document.createElement("span");
       unitSpan.className = "unit";
       if (col.key === "diameter") {
-        unitSpan.textContent = selectSymbols.find((item) => item.value === row.symbol)?.diameterSuffix || "A";
+        unitSpan.textContent = selectSymbols_materials.find((item) => item.value === row.symbol)?.diameterSuffix || "A";
+      } else if (col.key === "gauge") {
+        unitSpan.textContent = "番手";
       } else {
         unitSpan.textContent = "t";
       }
@@ -242,15 +232,19 @@ function renderGroups() {
       toggleBtn.setAttribute("aria-expanded", state.isCollapsedBySymbol[sym]);
     });
 
+    //カラム定義判断
+    const columns = state.tabName === "tabInsulation" ? COLUMNS_materials : COLUMNS_materials_metal;
+
+    //ヘッダ行作成
     const thead = document.createElement("thead");
-    thead.appendChild(createHeaderRow(sym));
+    thead.appendChild(createHeaderRow(sym, columns));
 
     //1行ずつ作成
     const tbody = document.createElement("tbody");
     for (const row of rowsInGroup) {
       const tr = document.createElement("tr");
       tr.dataset.id = row["id"];
-      appendCells(tr, row);
+      appendCells(tr, row, columns);
       tbody.appendChild(tr);
     }
 
@@ -285,7 +279,7 @@ async function fetchMaterials() {
 
   try {
     //DBからデータ取得
-    const { data, error } = await getAllItems();
+    const { data, error } = await getAllItems(state.tabName);
     if (error) {
       alert("データを取得できませんでした。");
       throw error;
@@ -460,6 +454,22 @@ function openQuantityCellEditor(td, row) {
 
 /** イベント系 */
 
+tabInsulation.addEventListener("click", () => {
+  if (state.tabName === "tabInsulation") return;
+  state.tabName = "tabInsulation";
+  tabInsulation.setAttribute("aria-selected", "true");
+  tabSheetMetal.setAttribute("aria-selected", "false");
+  fetchMaterials();
+});
+
+tabSheetMetal.addEventListener("click", () => {
+  if (state.tabName === "tabSheetMetal") return;
+  state.tabName = "tabSheetMetal";
+  tabSheetMetal.setAttribute("aria-selected", "true");
+  tabInsulation.setAttribute("aria-selected", "false");
+  fetchMaterials();
+});
+
 /** ソート関連の処理 */
 
 //カラム名押下処理
@@ -567,6 +577,8 @@ btnRefresh.addEventListener("click", async () => {
 const { openAddDialog } = initAddDialog({
   dialogAdd,
   formAdd,
+  fieldInsulation,
+  fieldMetal,
   btnAddOk,
   btnAddCancel,
   btnAddRow,

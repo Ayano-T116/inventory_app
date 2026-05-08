@@ -33,6 +33,8 @@ const selectSymbol = document.getElementById("selectSymbol");
 const subtitle = document.getElementById("subtitle");
 const tabInsulation = document.getElementById("tabInsulation");
 const tabSheetMetal = document.getElementById("tabSheetMetal");
+const fieldInsulation = document.getElementById("insulation");
+const fieldMetal = document.getElementById("metal");
 
 
 
@@ -592,6 +594,8 @@ btnRefresh.addEventListener("click", async () => {
 const { openAddDialog } = initAddDialog({
   dialogAdd,
   formAdd,
+  fieldInsulation,
+  fieldMetal,
   btnAddOk,
   btnAddCancel,
   btnAddRow,

@@ -11,6 +11,16 @@ function normalizeIntegerText(text) {
   return half.replace(/[^0-9]/g, "");
 }
 
+// 全角英数字を半角に変換し、英数字以外を削除する
+function normalizeAlphanumericText(text) {
+  // 全角数字を半角へ
+  const half = String(text || "").replace(/[０-９]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+  );
+  // 英数字以外を削除
+  return half.replace(/[^A-Za-z0-9]/g, "");
+}
+
 // フォームデータから数値を読み取る
 function readNumber(formData, name) {
   const raw = formData.get(name);
@@ -83,6 +93,7 @@ function compareValues(a, b, key) {
 
 export const helpers = {
   normalizeIntegerText,
+  normalizeAlphanumericText,
   readNumber,
   formatMaterialText,
   toId,

@@ -8,11 +8,11 @@ export const prodMessage = "大正断熱専用です。部外者は触るんじ�
 export const devMessage = "デモバージョンです。ご自由に操作ください。";
 
 export const COLUMNS_materials = [
-  { label: "口径", key: "diameter" },
-  { label: "厚み", key: "thickness" },
-  { label: "表被仕様", key: "coating_type" },
-  { label: "数量", key: "quantity", align: "num" },
-  { label: "更新日", key: "updated_at" },
+  { label: "口径", key: "diameter", width: "15%" },
+  { label: "厚み", key: "thickness", width: "15%" },
+  { label: "表被仕様", key: "coating_type", width: "20%" },
+  { label: "数量", key: "quantity", align: "num", width: "15%" },
+  { label: "更新日", key: "updated_at", width: "25%" },
 ];
 
 export const selectSymbols_materials = [
@@ -37,10 +37,10 @@ export const duplicateKeys_materials = [
 ];
 
 export const COLUMNS_materials_metal = [
-  { label: "番手", key: "gauge" },
-  { label: "色", key: "color" },
-  { label: "数量", key: "quantity", align: "num" },
-  { label: "更新日", key: "updated_at" },
+  { label: "番手", key: "gauge", width: "15%" },
+  { label: "色", key: "color", width: "30%" },
+  { label: "数量", key: "quantity", align: "num", width: "15%" },
+  { label: "更新日", key: "updated_at", width: "30%" },
 ];
 
 export const selectSymbols_materials_metal = [

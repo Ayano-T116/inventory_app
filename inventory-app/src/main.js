@@ -75,12 +75,14 @@ function createHeaderRow(sym, columns) {
   thCheck.className = "checkCell";
   thCheck.setAttribute("aria-label", "選択");
   thCheck.textContent = "選択";
+  thCheck.style.width = "10%";
   tr.appendChild(thCheck);
 
   for (const col of columns) {
     const th = document.createElement("th");
     th.dataset.key = col.key;
     if (col.align === "num") th.classList.add("num");
+    if (col.width) th.style.width = col.width;
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -120,6 +122,7 @@ function appendCells(tr, row, columns) {
   cb.dataset.id = helpers.toId(row["id"]);
   tdCheck.appendChild(cb);
   tdCheck.style.cursor = "pointer";
+  tdCheck.style.width = "10%";
   tdCheck.addEventListener("click", (e) => {
     // 既にチェックボックス自身がクリックされた場合は何もしない
     if (e.target.closest("input[type='checkbox']")) return;
@@ -133,6 +136,7 @@ function appendCells(tr, row, columns) {
     td.tabIndex = 0;
     if (col.align === "num") td.classList.add("num");
     if (col.key === "quantity") td.dataset.editable = "quantity";
+    if (col.width) td.style.width = col.width;
 
     //更新日時を整形する
     const v = helpers.formatValue(col.key, row[col.key]);

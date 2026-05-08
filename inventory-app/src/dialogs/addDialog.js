@@ -27,6 +27,11 @@ export function initAddDialog({
         formAdd.querySelectorAll("input[name='diameter'], input[name='thickness'], input[name='quantity']")
     );
 
+    // 英数字入力欄の取得
+    const alphanumericInputs = Array.from(
+        formAdd.querySelectorAll("input[name='gauge']")
+    );
+
     // ダイアログを開く関数
     function openAddDialog() {
         if (!dialogAdd) return;
@@ -151,6 +156,14 @@ export function initAddDialog({
     for (const input of numericInputs) {
         input.addEventListener("input", (ev) => {
             const next = helpers.normalizeIntegerText(ev.target.value);
+            ev.target.value = next;
+        });
+    }
+
+    // 英数字入力欄の整形
+    for (const inputAlpha of alphanumericInputs) {
+        inputAlpha.addEventListener("input", (ev) => {
+            const next = helpers.normalizeAlphanumericText(ev.target.value);
             ev.target.value = next;
         });
     }

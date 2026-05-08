@@ -173,7 +173,6 @@ export function initAddDialog({
 
     // 登録ボタンのクリックイベント
     formAdd.addEventListener("submit", async (ev) => {
-        console.log(state.tabName);
         ev.preventDefault();
         await addMaterials();
     });

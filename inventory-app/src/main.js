@@ -46,27 +46,6 @@ function setStatus(message, kind = "info") {
 }
 
 
-// /**外部へ ソート状態を見てテーブル内の表示順を調整 */
-// function getSortedRows(symbol, rows) {
-//   const sortState = state.sortStateBySymbol[symbol];
-//   if (!sortState || sortState.direction === "none") return [...rows];
-//   const dir = sortState.direction === "asc" ? 1 : -1;
-//   return [...rows].sort((left, right) => {
-//     return helpers.compareValues(left[sortState.key], right[sortState.key], sortState.key) * dir;
-//   });
-// }
-
-// /**外部へ symbol ごとにまとめる (記号:[]),(記号:[]),...の形にしてる */
-// function groupBySymbol(rows) {
-//   const map = new Map();
-//   for (const row of rows) {
-//     const sym = row.symbol == null ? "" : String(row.symbol);
-//     if (!map.has(sym)) map.set(sym, []);
-//     map.get(sym).push(row);
-//   }
-//   return map;
-// }
-
 /** header行のソートマークを制御する */
 function updateHeaderSortMark(sym, thead) {
   const headers = thead.querySelectorAll("th[data-key]");

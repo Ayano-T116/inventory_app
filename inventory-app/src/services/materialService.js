@@ -52,7 +52,6 @@ export async function insertMaterial(allRows, payload, tabName) {
             throw new Error("quantity は数値で入力してください。");
         }
         if (isDuplicate(allRows, payload, tabName)) {
-            console.log(isDuplicate(allRows, payload, tabName));
             throw new Error("重複エラー");
         }
     }

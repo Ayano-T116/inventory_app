@@ -71,7 +71,7 @@ export function initQuantityDialog({
         } catch (e) {
             console.error(e);
             setStatus(`更新エラー: ${e.message || e}`, "error");
-            alert(`更新エラー: ${e.message || e}`);
+            alert(`データを更新できませんでした。\n ${e.message || e}`);
         } finally {
             if (btnQuantityChangeOk) btnQuantityChangeOk.disabled = false;
             if (btnQuantityChangeCancel) btnQuantityChangeCancel.disabled = false;

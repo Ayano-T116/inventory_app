@@ -71,7 +71,7 @@ export function initDeleteDialog({
         } catch (e) {
             console.error(e);
             setStatus(`削除エラー: ${e.message || e}`, "error");
-            alert(`削除エラー: ${e.message || e}`);
+            alert(`データを削除できませんでした。\n ${e.message || e}`);
         } finally {
             if (btnDeleteOk) btnDeleteOk.disabled = false;
             if (btnDeleteCancel) btnDeleteCancel.disabled = false;

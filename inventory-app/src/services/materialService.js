@@ -93,7 +93,6 @@ export async function deleteMaterialsByIds(ids) {
 
     const { error } = await deleteItem(ids, state.tabName);
     if (error) {
-        alert("データを削除できませんでした。");
         throw error;
     }
 }
@@ -143,7 +142,6 @@ export async function updateMaterialsQuantity(allRows, quantityChanges) {
     for (const pl of payload) {
         const { error } = await updateItem(pl, state.tabName);
         if (error) {
-            alert("データを更新できませんでした。");
             throw error;
         }
     }

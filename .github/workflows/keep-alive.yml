@@ -9,6 +9,10 @@ jobs:
   keep-alive:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: inventory-app   # ★追加
+
     steps:
       - name: ソースコードを取得
         uses: actions/checkout@v4
@@ -19,7 +23,7 @@ jobs:
           node-version: 20
 
       - name: Supabaseライブラリをインストール
-        run: npm install @supabase/supabase-js
+        run: npm install
 
       - name: Keep Alive実行
         env:

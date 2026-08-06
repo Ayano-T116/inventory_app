@@ -28,5 +28,5 @@ jobs:
       - name: Keep Alive実行
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_1 }}
         run: node keepAlive.js

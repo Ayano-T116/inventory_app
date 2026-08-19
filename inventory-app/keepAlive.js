@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 const { data, error } = await supabase
-  .from("system_keep_alive")
+  .from("keep_alive")
   .update({
     updated_at: new Date().toISOString(),
   })

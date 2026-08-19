@@ -25,6 +25,23 @@ jobs:
       - name: Supabaseライブラリをインストール
         run: npm install
 
+      - name: Secrets確認
+        run: |
+          if [ -n "$SUPABASE_URL" ]; then
+            echo "SUPABASE_URL: 設定されています"
+          else
+            echo "SUPABASE_URL: 設定されていません"
+          fi
+
+          if [ -n "$SUPABASE_ANON_KEY" ]; then
+            echo "SUPABASE_ANON_KEY: 設定されています"
+          else
+            echo "SUPABASE_ANON_KEY: 設定されていません"
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_1 }}
+
       - name: Keep Alive実行
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

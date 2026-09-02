@@ -2,7 +2,7 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "30 */6 * * *"
   workflow_dispatch:
 
 jobs:
@@ -39,11 +39,11 @@ jobs:
             echo "SUPABASE_ANON_KEY: 設定されていません"
           fi
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_1 }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_2 }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_2 }}
 
       - name: Keep Alive実行
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_1 }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_2 }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_2 }}
         run: node keepAlive.js
